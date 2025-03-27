@@ -1,1 +1,13 @@
+flask
 flask-cors
+requests
+websocket-client
+pandas
+openpyxl
+python-dotenv
+scikit-learn
+nltk
+tensorflow
+yfinance
+beautifulsoup4
+lxml
