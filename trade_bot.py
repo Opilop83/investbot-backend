@@ -695,12 +695,8 @@ def start_bot():
 import time
 
 
-def start_bot():
-    while True:
-        logging.info("Bot działa – nowa iteracja.")
-        time.sleep(5)
-
 if __name__ == "__main__":
+    start_bot()
     
 
 
