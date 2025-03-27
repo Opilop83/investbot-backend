@@ -33,11 +33,15 @@ def stop():
 
 @app.route("/log")
 def log():
+    log_path = "bot.log"
+    if not os.path.exists(log_path):
+        return "Log file not found (bot.log)", 404
     try:
-        with open("bot.log", "r", encoding="utf-8") as f:
+        with open(log_path, "r", encoding="utf-8") as f:
             return f.read()
     except Exception as e:
         return str(e), 500
+
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
