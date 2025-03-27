@@ -1,7 +1,7 @@
 import websocket, json, openpyxl
 from datetime import datetime, timedelta
 
-class XTB:
+class XTBClient:
     __version__ = "1.0"
 
     def __init__(self, ID, PSW):
