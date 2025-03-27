@@ -684,6 +684,7 @@ def start_bot():
         xtb_client.close()
         print("✅ Bot zakończył działanie.")
 
+import time
 import logging
 
 logging.basicConfig(
@@ -694,8 +695,14 @@ logging.basicConfig(
 
 logging.info("InvestBot AI uruchomiony.")
 
+def start_bot():
+    while True:
+        logging.info("Bot działa – nowa iteracja.")
+        time.sleep(5)
+
 if __name__ == "__main__":
     start_bot()
+
 
 
 
