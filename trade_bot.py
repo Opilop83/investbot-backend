@@ -16,7 +16,15 @@ from ai_trading_enhancements import (
     generate_trading_signal_1h,
 
 )
+import logging
 
+logging.basicConfig(
+    filename="bot.log",
+    level=logging.INFO,
+    format="%(asctime)s - %(levelname)s - %(message)s"
+)
+
+logging.info("InvestBot AI uruchomiony.")
 
 
 def restart_thread(target_func, args):
@@ -40,17 +48,17 @@ def decide_trade_action_crypto(
     """
 
     # --- 1. Debug-Logi ---
-    print("\n🔍 **Decyzja handlowa - Debug wskaźników** 🔍")
-    print(f"📈 Sygnały: {signals}")
-    print(f"ADX 1m: {adx_1m}, ADX 5m: {adx_5m}, ADX 15m: {adx_15m}, ADX 1h: {adx_1h}")
-    print(f"SMA50 15m: {sma50_15m}, SMA200 15m: {sma200_15m}")
-    print(f"SMA50 1h: {sma50_1h}, SMA200 1h: {sma200_1h}")
-    print(f"📊 Cena zamknięcia: {last_close}, BB Upper: {bb_upper}, BB Lower: {bb_lower}")
-    print(f"RSI 5m: {rsi_5m}, RSI 15m: {rsi_15m}")
-    print(f"Momentum 5m: {momentum_5m}, Momentum 15m: {momentum_15m}")
-    print(f"⚠️ Spread: {spread}")
-    print(f"📊 Wolumen: {volume}, Średni wolumen: {avg_volume}")
-    print("--------------------------------------------------\n")
+    logging.info("\n🔍 **Decyzja handlowa - Debug wskaźników** 🔍")
+    logging.info(f"📈 Sygnały: {signals}")
+    logging.info(f"ADX 1m: {adx_1m}, ADX 5m: {adx_5m}, ADX 15m: {adx_15m}, ADX 1h: {adx_1h}")
+    logging.info(f"SMA50 15m: {sma50_15m}, SMA200 15m: {sma200_15m}")
+    logging.info(f"SMA50 1h: {sma50_1h}, SMA200 1h: {sma200_1h}")
+    logging.info(f"📊 Cena zamknięcia: {last_close}, BB Upper: {bb_upper}, BB Lower: {bb_lower}")
+    logging.info(f"RSI 5m: {rsi_5m}, RSI 15m: {rsi_15m}")
+    logging.info(f"Momentum 5m: {momentum_5m}, Momentum 15m: {momentum_15m}")
+    logging.info(f"⚠️ Spread: {spread}")
+    logging.info(f"📊 Wolumen: {volume}, Średni wolumen: {avg_volume}")
+    logging.info("--------------------------------------------------\n")
 
     # --- 2. Policz liczbę sygnałów buy i sell ---
     buy_count = signals.count("buy")
@@ -58,7 +66,7 @@ def decide_trade_action_crypto(
 
     # --- 3. Jeśli wszystkie sygnały to HOLD => natychmiast "hold" ---
     if buy_count == 0 and sell_count == 0:
-        print("⚠️ Wszystkie sygnały to HOLD. Pomijam transakcję.")
+        logging.info("⚠️ Wszystkie sygnały to HOLD. Pomijam transakcję.")
         return "hold"
 
     # --- 4. Sprawdź warunki trendu (SMA) ---
@@ -76,26 +84,26 @@ def decide_trade_action_crypto(
 
     # --- 6. Jeśli nadal "hold", kończymy ---
     if final_decision == "hold":
-        print("⚠️ Brak jednoznacznego sygnału, pomijam transakcję.")
+        logging.info("⚠️ Brak jednoznacznego sygnału, pomijam transakcję.")
         return "hold"
 
     # --- 7. Sprawdzenie warunków Bollingera i Momentum ---
     #    - BUY: jeśli zbyt mocno wybiło powyżej BB albo momentum jest ujemne przy niskim ADX
     if final_decision == "buy":
         if last_close > bb_upper * 1.01:
-            print("⚠️ BUY: Cena wybiła powyżej BB – możliwa korekta. HOLD.")
+            logging.info("⚠️ BUY: Cena wybiła powyżej BB – możliwa korekta. HOLD.")
             return "hold"
         if momentum_15m < 0 and adx_15m < 30:
-            print("⚠️ BUY: Momentum nie potwierdza trendu i ADX dość niski. HOLD.")
+            logging.info("⚠️ BUY: Momentum nie potwierdza trendu i ADX dość niski. HOLD.")
             return "hold"
 
     #    - SELL: jeśli zbyt mocno wybiło poniżej BB albo momentum jest dodatnie przy niskim ADX
     if final_decision == "sell":
         if last_close < bb_lower * 0.99:
-            print("⚠️ SELL: Cena wybiła poniżej BB – możliwe odbicie. HOLD.")
+            logging.info("⚠️ SELL: Cena wybiła poniżej BB – możliwe odbicie. HOLD.")
             return "hold"
         if momentum_15m > 0 and adx_15m < 30:
-            print("⚠️ SELL: Momentum nie potwierdza trendu spadkowego i ADX dość niski. HOLD.")
+            logging.info("⚠️ SELL: Momentum nie potwierdza trendu spadkowego i ADX dość niski. HOLD.")
             return "hold"
 
     # --- 8. Sprawdzenie spreadu w % (dynamiczny próg) ---
@@ -106,11 +114,11 @@ def decide_trade_action_crypto(
         spread_limit = 6
 
     if spread_percent > spread_limit:
-        print(f"❌ Spread = {spread_percent:.2f}% > {spread_limit}%. HOLD.")
+        logging.info(f"❌ Spread = {spread_percent:.2f}% > {spread_limit}%. HOLD.")
         return "hold"
 
     # --- 9. Ostateczna decyzja ---
-    print(f"✅ Decyzja: Otwieram pozycję {final_decision.upper()} dla {symbol}")
+    logging.info(f"✅ Decyzja: Otwieram pozycję {final_decision.upper()} dla {symbol}")
     return final_decision
 
 
@@ -122,17 +130,17 @@ def analyze_and_trade(xtb_client):
     """🔍 Analizuje symbole i podejmuje decyzje handlowe cyklicznie."""
     
     while True:
-        print("\n🔄🔄🔄🔄 *** Nowa iteracja analizy ***")
-        print("📊 Pobieram listę otwartych pozycji...")
+        logging.info("\n🔄🔄🔄🔄 *** Nowa iteracja analizy ***")
+        logging.info("📊 Pobieram listę otwartych pozycji...")
         open_positions = xtb_client.get_open_positions()
 
-        print("📊 Filtruję symbole według zmienności i trendu...")
+        logging.info("📊 Filtruję symbole według zmienności i trendu...")
         filtered_symbols = xtb_client.filter_symbols_by_volatility_and_trend()
 
-        print(f"✅ Wyfiltrowano {len(filtered_symbols)} symboli do analizy.")
+        logging.info(f"✅ Wyfiltrowano {len(filtered_symbols)} symboli do analizy.")
 
         if not filtered_symbols:
-            print("⚠️ Brak symboli do analizy, czekam 60 sekund.")
+            logging.info("⚠️ Brak symboli do analizy, czekam 60 sekund.")
             time.sleep(60)  
             continue
 
@@ -140,37 +148,37 @@ def analyze_and_trade(xtb_client):
 
         for symbol in filtered_symbols:
             try:
-                print(f"\n📈📈📈📈📈📈 Rozpoczynam analizę dla {symbol}...")
+                logging.info(f"\n📈📈📈📈📈📈 Rozpoczynam analizę dla {symbol}...")
                 
                 if symbol in open_positions_symbols:
-                    print(f"⚠️ Pomijam {symbol}, ponieważ istnieje już otwarta pozycja.")
+                    logging.info(f"⚠️ Pomijam {symbol}, ponieważ istnieje już otwarta pozycja.")
                     continue  
 
-                print("📊 Pobieram dane świecowe dla różnych interwałów...")
+                logging.info("📊 Pobieram dane świecowe dla różnych interwałów...")
                 signal_1m, df_1m = analyze_interval(xtb_client, symbol, interval=1, history_days=1)
                 signal_5m, df_5m = analyze_interval(xtb_client, symbol, interval=5, history_days=2)
                 signal_15m, df_15m = analyze_interval(xtb_client, symbol, interval=15, history_days=5)
                 signal_1h, df_1h = analyze_interval(xtb_client, symbol, interval=60, history_days=30)
 
-                print(f"📊📊📊📊 Sygnały dla {symbol}: 1M={signal_1m}, 5M={signal_5m}, 15M={signal_15m}, 1H={signal_1h}")
+                logging.info(f"📊📊📊📊 Sygnały dla {symbol}: 1M={signal_1m}, 5M={signal_5m}, 15M={signal_15m}, 1H={signal_1h}")
 
-                print("📊 Generuję sygnał trendu dla 15M...")
+                logging.info("📊 Generuję sygnał trendu dla 15M...")
                 trend_signal = generate_trading_signal_15m(df_15m, xtb_client, symbol)
 
-                print("📊 Pobieram ceny ask/bid...")
+                logging.info("📊 Pobieram ceny ask/bid...")
                 ask_price = xtb_client.get_current_price_with_type(symbol, "buy")
                 bid_price = xtb_client.get_current_price_with_type(symbol, "sell")
 
                 if ask_price is None or bid_price is None:
-                    print(f"❌ Błąd: Brak poprawnych cen dla {symbol}. Pomijam.")
+                    logging.info(f"❌ Błąd: Brak poprawnych cen dla {symbol}. Pomijam.")
                     continue
 
                 spread = ask_price - bid_price
                 last_close = ask_price  
 
-                print(f"📊 Cena ASK: {ask_price}, BID: {bid_price}, Spread: {spread}")
+                logging.info(f"📊 Cena ASK: {ask_price}, BID: {bid_price}, Spread: {spread}")
 
-                print("📊 Pobieram wskaźniki techniczne...")
+                logging.info("📊 Pobieram wskaźniki techniczne...")
                 adx_1m = df_1m["ADX"].iloc[-1] if not df_1m.empty else 0
                 adx_5m = df_5m["ADX"].iloc[-1] if not df_5m.empty else 0
                 adx_15m = df_15m["ADX"].iloc[-1] if not df_15m.empty else 0
@@ -202,7 +210,7 @@ def analyze_and_trade(xtb_client):
 
                 
                 
-                print("📊 Decyzja tradingowa...")
+                logging.info("📊 Decyzja tradingowa...")
                 grouped_signals = [signal_1m, signal_5m, signal_15m, signal_1h]
                 final_decision = decide_trade_action_crypto(
                     grouped_signals, adx_1m, adx_5m, adx_15m, adx_1h,
@@ -212,65 +220,65 @@ def analyze_and_trade(xtb_client):
                 )
 
                 if final_decision == "hold":
-                    print(f"⚠️⚠️⚠️ Decyzja HOLD. Pomijam {symbol}.")
+                    logging.info(f"⚠️⚠️⚠️ Decyzja HOLD. Pomijam {symbol}.")
                     continue
                 else:
-                    print(f"✅✅✅ Decyzja: Otwieram pozycję {final_decision.upper()} dla {symbol}")
+                    logging.info(f"✅✅✅ Decyzja: Otwieram pozycję {final_decision.upper()} dla {symbol}")
 
                 
                 
 
                 if trend_signal == "hold":
-                    print(f"⚠️ Brak potwierdzenia trendu dla {symbol}. Pomijam.")
+                    logging.info(f"⚠️ Brak potwierdzenia trendu dla {symbol}. Pomijam.")
                     continue
 
-                print(f"✅ Trend potwierdzony: {trend_signal.upper()} dla {symbol}")
+                logging.info(f"✅ Trend potwierdzony: {trend_signal.upper()} dla {symbol}")
 
                 open_positions = xtb_client.get_open_positions()
                 open_positions_symbols = set(open_positions["symbol"].unique()) if not open_positions.empty else set()
 
                 if symbol in open_positions_symbols:
-                    print(f"⚠️ Pozycja dla {symbol} już otwarta, pomijam.")
+                    logging.info(f"⚠️ Pozycja dla {symbol} już otwarta, pomijam.")
                     continue  
 
-                print("📊 Obliczam poziomy SL i TP...")
+                logging.info("📊 Obliczam poziomy SL i TP...")
                 stop_loss, take_profit = xtb_client.calculate_sl_tp_custom(symbol, final_decision)
 
-                print(f"🔍 SL/TP dla {symbol}: SL={stop_loss}, TP={take_profit}")
+                logging.info(f"🔍 SL/TP dla {symbol}: SL={stop_loss}, TP={take_profit}")
 
                 if stop_loss is None or take_profit is None or stop_loss == 0 or take_profit == 0:
-                    print(f"❌ Niepoprawne wartości SL/TP dla {symbol}. Pomijam.")
+                    logging.info(f"❌ Niepoprawne wartości SL/TP dla {symbol}. Pomijam.")
                     continue
 
-                print("📊 Pobieram minimalny wolumen...")
+                logging.info("📊 Pobieram minimalny wolumen...")
                 min_volume, step_lot_size, max_volume = xtb_client.get_minimum_volume(symbol)
 
-                print("📊 Obliczam wielkość pozycji...")
+                logging.info("📊 Obliczam wielkość pozycji...")
                 volume = xtb_client.calculate_volume(last_close, min_volume, step_lot_size, max_volume)
 
                 if volume is None or volume == 0:
-                    print(f"❌ Objętość transakcji dla {symbol} wynosi 0. Pomijam.")
+                    logging.info(f"❌ Objętość transakcji dla {symbol} wynosi 0. Pomijam.")
                     continue
 
-                print(f"📊 Finalny wolumen transakcji: {volume}")
+                logging.info(f"📊 Finalny wolumen transakcji: {volume}")
                 if not xtb_client.is_connection_active():
-                    print("⚠️ WebSocket zerwany. Ponawiam połączenie...")
+                    logging.info("⚠️ WebSocket zerwany. Ponawiam połączenie...")
                     xtb_client.reconnect()
                     xtb_client.ensure_connection()
 
 
-                print("🚀 Otwieram pozycję...")
+                logging.info("🚀 Otwieram pozycję...")
                 success = xtb_client.open_trade(symbol, volume, final_decision, stop_loss, take_profit)
 
                 if success:
-                    print(f"✅ Zlecenie otwarte dla {symbol}!")
+                    logging.info(f"✅ Zlecenie otwarte dla {symbol}!")
                 else:
-                    print(f"❌ Błąd otwierania zlecenia dla {symbol}.")
+                    logging.info(f"❌ Błąd otwierania zlecenia dla {symbol}.")
 
             except Exception as e:
-                print(f"❌ Błąd podczas analizy dla {symbol}: {e}")
+                logging.info(f"❌ Błąd podczas analizy dla {symbol}: {e}")
 
-        print("⏳ Czekam 120 sekund przed kolejną analizą...")
+        logging.info("⏳ Czekam 120 sekund przed kolejną analizą...")
         time.sleep(120)
 
 
@@ -291,11 +299,11 @@ def analyze_interval(xtb_client, symbol, interval, history_days):
 
     # ❌ Sprawdzamy, czy pobrane dane nie są puste
     if df is None or df.empty:
-        print(f"❌ Brak danych dla {symbol} na interwale {interval} min. Pomijam analizę.")
+        logging.info(f"❌ Brak danych dla {symbol} na interwale {interval} min. Pomijam analizę.")
         return "no data", None
 
     if interval in [15, 60] and (df_1h is None or df_1h.empty):
-        print(f"⚠️ Brak danych 1H dla {symbol}. Analiza może być mniej dokładna.")
+        logging.info(f"⚠️ Brak danych 1H dla {symbol}. Analiza może być mniej dokładna.")
 
     # 🔍 Obliczamy wskaźniki techniczne
     df = calculate_indicators(df, interval)
@@ -307,7 +315,7 @@ def analyze_interval(xtb_client, symbol, interval, history_days):
     resistance = df.get('Resistance', pd.Series([df['Close'].iloc[-1] * 1.01])).iloc[-1]
     last_close = df['Close'].iloc[-1]
 
-    print(f"🔍 {symbol} | Last Close: {last_close:.2f}, Support: {support:.2f}, Resistance: {resistance:.2f}")
+    logging.info(f"🔍 {symbol} | Last Close: {last_close:.2f}, Support: {support:.2f}, Resistance: {resistance:.2f}")
 
     # 🔥 Wybór odpowiedniego generatora sygnału w zależności od interwału
     if interval == 1:
@@ -333,7 +341,7 @@ def determine_trend(df):
     if "ADX" in df.columns:  # ✅ Poprawione (w kodzie ADX jest zapisany z dużej litery)
         adx = df["ADX"].iloc[-1]
     else:
-        print("⚠️ Brak ADX w danych. Używam domyślnej wartości 20.")
+        logging.info("⚠️ Brak ADX w danych. Używam domyślnej wartości 20.")
         adx = 20  # Domyślna wartość dla braku danych ADX
 
     if sma50 > sma200 and adx > 20:
@@ -368,40 +376,40 @@ def detect_and_open_trade(xtb_client):
     📈 Wykrywa dynamiczne wybicia i otwiera pozycje z potwierdzeniem wolumenu.
     """
 
-    print("\n🔄 *** Nowa iteracja analizy wybić ***")
+    logging.info("\n🔄 *** Nowa iteracja analizy wybić ***")
       
 
 
-    print("📊 Pobieram listę dostępnych symboli...")
+    logging.info("📊 Pobieram listę dostępnych symboli...")
     symbols = xtb_client.SELECTED_SYMBOLS
     if not symbols:
-        print("⚠️ Brak symboli do analizy. Sprawdź assets_list.xlsx.")
+        logging.info("⚠️ Brak symboli do analizy. Sprawdź assets_list.xlsx.")
         time.sleep(10)
         return
 
-    print("📊 Pobieram otwarte pozycje...")
+    logging.info("📊 Pobieram otwarte pozycje...")
     open_positions = xtb_client.get_open_positions()
     open_positions_dict = {pos["symbol"]: pos for _, pos in open_positions.iterrows()}
 
     for symbol in symbols:
-        print(f"\n📊📊📊📊 Analiza wybicia dla {symbol}")
+        logging.info(f"\n📊📊📊📊 Analiza wybicia dla {symbol}")
 
        
 
         try:
-            print("📊 Pobieram dane świecowe...")
+            logging.info("📊 Pobieram dane świecowe...")
             df_1m = xtb_client.get_candlestick_data(symbol, interval=1, history_days=1)
             df_5m = xtb_client.get_candlestick_data(symbol, interval=5, history_days=2)
 
             if df_1m is None or df_5m is None or df_1m.empty or df_5m.empty:
-                print(f"⚠️ Brak wymaganych danych historycznych dla {symbol}. Pomijam.")
+                logging.info(f"⚠️ Brak wymaganych danych historycznych dla {symbol}. Pomijam.")
                 continue
 
-            print("📊 Obliczam wskaźniki techniczne...")
+            logging.info("📊 Obliczam wskaźniki techniczne...")
             df_1m = calculate_indicators(df_1m, 1)
             df_5m = calculate_indicators(df_5m, 5)
 
-            print("📊 Analizuję wybicie...")
+            logging.info("📊 Analizuję wybicie...")
             momentum_1m = df_1m["Momentum"].iloc[-1]
             rsi_1m = df_1m["RSI"].iloc[-1]
             adx_1m = df_1m["ADX"].iloc[-1]  # Obecna wartość ADX
@@ -430,18 +438,18 @@ def detect_and_open_trade(xtb_client):
 
             # ---------------------------
             # Debug – wypisujemy każdy warunek z oceną True/False
-            print("\n🔍 **Debug parametry wykrycia wybicia**")
-            print(f"    ADX (1m)         = {adx_1m:.2f}, próg > {adx_threshold} -> {adx_1m > adx_threshold}")
-            print(f"    RSI (1m)         = {rsi_1m:.2f}")
-            print(f"       RSI>70?       -> {rsi_1m > rsi_upper_threshold}")
-            print(f"       RSI<30?       -> {rsi_1m < rsi_lower_threshold}")
-            print(f"    Momentum (1m)    = {momentum_1m:.2f}")
-            print(f"    Volume (1m)      = {volume:.2f}, avgVol(5m)={avg_volume_5m:.2f}, factor={volume_factor}")
-            print(f"       vol>avgVol*1.2? -> {volume > (avg_volume_5m * volume_factor)}")
-            print(f"    PriceChange(1m)  = {price_change:.2f} %")
-            print(f"       > {price_change_up}%? -> {price_change > price_change_up}")
-            print(f"       < {price_change_down}%? -> {price_change < price_change_down}")
-            print("--------------------------------------------------\n")
+            logging.info("\n🔍 **Debug parametry wykrycia wybicia**")
+            logging.info(f"    ADX (1m)         = {adx_1m:.2f}, próg > {adx_threshold} -> {adx_1m > adx_threshold}")
+            logging.info(f"    RSI (1m)         = {rsi_1m:.2f}")
+            logging.info(f"       RSI>70?       -> {rsi_1m > rsi_upper_threshold}")
+            logging.info(f"       RSI<30?       -> {rsi_1m < rsi_lower_threshold}")
+            logging.info(f"    Momentum (1m)    = {momentum_1m:.2f}")
+            logging.info(f"    Volume (1m)      = {volume:.2f}, avgVol(5m)={avg_volume_5m:.2f}, factor={volume_factor}")
+            logging.info(f"       vol>avgVol*1.2? -> {volume > (avg_volume_5m * volume_factor)}")
+            logging.info(f"    PriceChange(1m)  = {price_change:.2f} %")
+            logging.info(f"       > {price_change_up}%? -> {price_change > price_change_up}")
+            logging.info(f"       < {price_change_down}%? -> {price_change < price_change_down}")
+            logging.info("--------------------------------------------------\n")
 
             final_decision = None  # Inicjalizacja na początku, aby uniknąć błędu dostępu
             breakout_detected = False
@@ -458,41 +466,41 @@ def detect_and_open_trade(xtb_client):
 
 
             if not breakout_detected:
-                print(f"⚠️ Brak dynamicznego wybicia dla {symbol}. Pomijam.")
+                logging.info(f"⚠️ Brak dynamicznego wybicia dla {symbol}. Pomijam.")
                 continue
 
             if final_decision is None:
-                print(f"⚠️ Błąd: final_decision nadal None dla {symbol}, sprawdź logikę!")
+                logging.info(f"⚠️ Błąd: final_decision nadal None dla {symbol}, sprawdź logikę!")
                 continue
 
-            print(f"✅ Wykryto wybicie! Otwieram pozycję {final_decision.upper()} dla {symbol}")
+            logging.info(f"✅ Wykryto wybicie! Otwieram pozycję {final_decision.upper()} dla {symbol}")
 
 
 
-            print("📊 Pobieram ceny bid/ask...")
+            logging.info("📊 Pobieram ceny bid/ask...")
             ask_price = xtb_client.get_current_price_with_type(symbol, "buy")
             bid_price = xtb_client.get_current_price_with_type(symbol, "sell")
             entry_price = ask_price if final_decision == "buy" else bid_price
 
-            print("📊 Obliczam poziomy SL i TP...")
+            logging.info("📊 Obliczam poziomy SL i TP...")
             stop_loss, take_profit = xtb_client.calculate_sl_tp_custom(symbol, final_decision)
 
-            print("📊 Obliczam wielkość pozycji...")
+            logging.info("📊 Obliczam wielkość pozycji...")
             min_volume, step_lot_size, max_volume = xtb_client.get_minimum_volume(symbol)
             volume = xtb_client.calculate_volume(entry_price, min_volume, step_lot_size, max_volume)
 
-            print("🚀 Otwieram pozycję...")
+            logging.info("🚀 Otwieram pozycję...")
             success = xtb_client.open_trade(symbol, volume, final_decision, stop_loss, take_profit)
 
             if success:
-                print(f"✅ Zlecenie otwarte dla {symbol}!")
+                logging.info(f"✅ Zlecenie otwarte dla {symbol}!")
             else:
-                print(f"❌ Błąd otwierania zlecenia dla {symbol}.")
+                logging.info(f"❌ Błąd otwierania zlecenia dla {symbol}.")
 
         except Exception as e:
-            print(f"❌ Błąd podczas analizy wybicia dla {symbol}: {e}")
+            logging.info(f"❌ Błąd podczas analizy wybicia dla {symbol}: {e}")
 
-    print("⏳ Czekam 60 sekund przed kolejną analizą...")
+    logging.info("⏳ Czekam 60 sekund przed kolejną analizą...")
     time.sleep(30)
 
 def adjust_sl_tp(xtb_client, symbol, entry_price, trade_type, last_price, atr_multiplier=1, digits=2):
@@ -503,7 +511,7 @@ def adjust_sl_tp(xtb_client, symbol, entry_price, trade_type, last_price, atr_mu
         entry_price = float(entry_price)
         last_price = float(last_price)
 
-        print(f"🔍 Debug adjust_sl_tp: entry_price={entry_price}, last_price={last_price}, atr_multiplier={atr_multiplier}")
+        logging.info(f"🔍 Debug adjust_sl_tp: entry_price={entry_price}, last_price={last_price}, atr_multiplier={atr_multiplier}")
 
         atr = abs(last_price - entry_price) * atr_multiplier
         atr = min(atr, entry_price * 0.1)  # ATR nie może być większy niż 10% ceny
@@ -512,7 +520,7 @@ def adjust_sl_tp(xtb_client, symbol, entry_price, trade_type, last_price, atr_mu
         current_sl, current_tp = xtb_client.get_current_sl_tp(symbol)
 
         if current_sl is None or current_tp is None:
-            print(f"⚠️ Brak wcześniejszych SL/TP, ustawiam domyślne wartości.")
+            logging.info(f"⚠️ Brak wcześniejszych SL/TP, ustawiam domyślne wartości.")
             current_sl = entry_price * 0.95  # SL 5% poniżej ceny wejścia
             current_tp = entry_price * 1.10  # TP 10% powyżej ceny wejścia
 
@@ -528,11 +536,11 @@ def adjust_sl_tp(xtb_client, symbol, entry_price, trade_type, last_price, atr_mu
         new_sl = round(new_sl, digits)
         new_tp = round(new_tp, digits)
 
-        print(f"📊 Nowe SL: {new_sl}, Nowe TP: {new_tp} (zaokrąglone do {digits} miejsc po przecinku)")
+        logging.info(f"📊 Nowe SL: {new_sl}, Nowe TP: {new_tp} (zaokrąglone do {digits} miejsc po przecinku)")
         return new_sl, new_tp
 
     except Exception as e:
-        print(f"❌ Błąd w adjust_sl_tp: {e}")
+        logging.info(f"❌ Błąd w adjust_sl_tp: {e}")
         return None, None
 
 
@@ -541,11 +549,11 @@ def monitor_open_positions(xtb_client):
     Monitoruje otwarte pozycje i dynamicznie zarządza SL oraz TP w oparciu o trend.
     """
     while True:
-        print("\n🔄 *** Nowa iteracja monitorowania otwartych pozycji ***")
+        logging.info("\n🔄 *** Nowa iteracja monitorowania otwartych pozycji ***")
 
         open_positions = xtb_client.get_open_positions()
         if open_positions is None or open_positions.empty:
-            print("✅ Brak otwartych pozycji. Monitorowanie zakończone.")
+            logging.info("✅ Brak otwartych pozycji. Monitorowanie zakończone.")
             time.sleep(120)
             continue
 
@@ -560,11 +568,11 @@ def monitor_open_positions(xtb_client):
             # ✅ Pobranie aktualnej ceny rynkowej
             close_price = xtb_client.get_current_price_with_type(symbol, trade_type)
             if close_price is None or close_price == 0:
-                print(f"⚠️ {symbol} - Brak aktualnej ceny rynkowej. Pomijam analizę.")
+                logging.info(f"⚠️ {symbol} - Brak aktualnej ceny rynkowej. Pomijam analizę.")
                 continue
 
-            print(f"\n🔍 Pozycja {order_id} ({symbol}) | Debug danych pozycji:")
-            print(position.to_dict())
+            logging.info(f"\n🔍 Pozycja {order_id} ({symbol}) | Debug danych pozycji:")
+            logging.info(position.to_dict())
             
             
             
@@ -577,23 +585,23 @@ def monitor_open_positions(xtb_client):
             margin = (entry_price * volume * lot_size) / leverage
             margin = round(margin, 2)  # Zaokrąglamy do 2 miejsc po przecinku
 
-            print(f"\n🔍 Pozycja {order_id} ({symbol}) | Debug danych pozycji:")
-            print(position.to_dict())
-            print(f"💰 Marża: {margin} USD (Dźwignia: {leverage}x, Lot: {lot_size})")
+            logging.info(f"\n🔍 Pozycja {order_id} ({symbol}) | Debug danych pozycji:")
+            logging.info(position.to_dict())
+            logging.info(f"💰 Marża: {margin} USD (Dźwignia: {leverage}x, Lot: {lot_size})")
             
             
 
             # ✅ Pobranie danych świec do analizy trendu
             df = xtb_client.get_candlestick_data(symbol, interval=60, history_days=30)
             if df is None or df.empty:
-                print(f"⚠️ Brak danych świecowych dla {symbol}. Pomijam analizę trendu.")
+                logging.info(f"⚠️ Brak danych świecowych dla {symbol}. Pomijam analizę trendu.")
                 continue
 
             trend_direction = determine_trend(df)  # Analiza trendu
             atr = calculate_atr(df)  # Pobranie wartości ATR
 
             if atr is None or atr <= 0:
-                print(f"⚠️ {symbol} - Nie można obliczyć ATR. Pomijam analizę SL/TP.")
+                logging.info(f"⚠️ {symbol} - Nie można obliczyć ATR. Pomijam analizę SL/TP.")
                 continue
 
             # ✅ Pobranie liczby miejsc po przecinku (`digits`) dla danego aktywa
@@ -604,7 +612,7 @@ def monitor_open_positions(xtb_client):
             new_sl, new_tp = adjust_sl_tp(xtb_client, symbol, entry_price, trade_type, close_price, atr_multiplier=1.5, digits=digits)
 
             if new_sl is None or new_tp is None:
-                print(f"❌ Błąd przy aktualizacji SL/TP dla {symbol}, pomijam...")
+                logging.info(f"❌ Błąd przy aktualizacji SL/TP dla {symbol}, pomijam...")
                 continue
 
             # ✅ Aktualizujemy SL/TP w XTB
@@ -623,38 +631,38 @@ import time
 
 def start_bot():
     """🚀 Uruchamia bota tradingowego z automatycznym restartem wątków"""
-    print("🚀 Uruchamiam bota tradingowego...")
+    logging.info("🚀 Uruchamiam bota tradingowego...")
 
     # **1️⃣ Inicjalizacja klienta XTB**
     try:
         xtb_client = XTBClient()
     except Exception as e:
-        print(f"❌ Błąd podczas inicjalizacji XTBClient: {e}")
+        logging.info(f"❌ Błąd podczas inicjalizacji XTBClient: {e}")
         return
 
     # **2️⃣ Debug: Sprawdzanie połączenia**
     if not xtb_client.is_connection_active():
-        print("❌ Błąd połączenia z XTB API. Restartuję bota...")
+        logging.info("❌ Błąd połączenia z XTB API. Restartuję bota...")
         xtb_client.reconnect()
         if not xtb_client.is_connection_active():
-            print("❌ Połączenie z XTB nie powiodło się! Zamykanie bota.")
+            logging.info("❌ Połączenie z XTB nie powiodło się! Zamykanie bota.")
             return
 
     # **3️⃣ Pobranie i filtrowanie symboli**
-    print("📊 Pobieram listę symboli do analizy...")
+    logging.info("📊 Pobieram listę symboli do analizy...")
     try:
         filtered_symbols = xtb_client.filter_symbols_by_volatility_and_trend()
-        print(f"✅ Wyfiltrowano {len(filtered_symbols)} aktywów do analizy.")
+        logging.info(f"✅ Wyfiltrowano {len(filtered_symbols)} aktywów do analizy.")
     except Exception as e:
-        print(f"❌ Błąd podczas filtrowania symboli: {e}")
+        logging.info(f"❌ Błąd podczas filtrowania symboli: {e}")
         return
 
     if not filtered_symbols:
-        print("⚠️ Brak symboli spełniających kryteria. Bot nie otworzy transakcji.")
+        logging.info("⚠️ Brak symboli spełniających kryteria. Bot nie otworzy transakcji.")
         return
 
     # **4️⃣ Uruchamianie wątków**
-    print("🚀 Uruchamianie wątków bota...")
+    logging.info("🚀 Uruchamianie wątków bota...")
     threads = {
         "detect_trade": restart_thread(detect_and_open_trade, (xtb_client,)),  
         "monitor_positions": restart_thread(monitor_open_positions, (xtb_client,)),  
@@ -668,7 +676,7 @@ def start_bot():
             # **🔄 Restartowanie wątków, jeśli się zakończyły**
             for name, thread in threads.items():
                 if not thread.is_alive():
-                    print(f"⚠️ Wątek `{name}` zakończył działanie! Restartuję...")
+                    logging.info(f"⚠️ Wątek `{name}` zakończył działanie! Restartuję...")
                     try:
                         if name == "detect_trade":
                             threads[name] = restart_thread(detect_and_open_trade, (xtb_client,))
@@ -677,23 +685,15 @@ def start_bot():
                         elif name == "analyze_trade":
                             threads[name] = restart_thread(analyze_and_trade, (xtb_client,))
                     except Exception as e:
-                        print(f"❌ Błąd podczas restartu wątku `{name}`: {e}")
+                        logging.info(f"❌ Błąd podczas restartu wątku `{name}`: {e}")
 
     except KeyboardInterrupt:
-        print("🛑 Zatrzymano bota, zamykanie wątków...")
+        logging.info("🛑 Zatrzymano bota, zamykanie wątków...")
         xtb_client.close()
-        print("✅ Bot zakończył działanie.")
+        logging.info("✅ Bot zakończył działanie.")
 
 import time
-import logging
 
-logging.basicConfig(
-    filename="bot.log",
-    level=logging.INFO,
-    format="%(asctime)s - %(levelname)s - %(message)s"
-)
-
-logging.info("InvestBot AI uruchomiony.")
 
 def start_bot():
     while True:
@@ -701,7 +701,7 @@ def start_bot():
         time.sleep(5)
 
 if __name__ == "__main__":
-    start_bot()
+    
 
 
 
