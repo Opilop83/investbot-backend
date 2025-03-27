@@ -13,3 +13,5 @@ beautifulsoup4
 lxml
 numpy
 vaderSentiment
+-e ./XTBApi
+
