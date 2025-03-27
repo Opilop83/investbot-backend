@@ -11,3 +11,4 @@ tensorflow
 yfinance
 beautifulsoup4
 lxml
+numpy
