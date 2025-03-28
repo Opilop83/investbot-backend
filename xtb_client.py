@@ -46,7 +46,7 @@ class XTBClient:
         self.client = self
 
         # Logowanie do API XTB
-        self.client.login(XTB_USER, XTB_PASSWORD)
+        self.client.connect(XTB_USER, XTB_PASSWORD)
 
 
     def rate_limited_request(self, function, *args, **kwargs):
@@ -124,6 +124,10 @@ class XTBClient:
 
         print("❌ Nie udało się połączyć z XTB API po kilku próbach.")
         return False  # Zwrot False jeśli po `retries` próbach nie udało się połączyć
+    
+    
+    def login(self):
+        return self.connect()
 
 
 
