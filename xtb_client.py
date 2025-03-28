@@ -14,7 +14,7 @@ from keras.models import Sequential
 from keras.layers import LSTM, Dense, Dropout, Input
 from ai_trading_enhancements import generate_trading_signal_15m, generate_trading_signal_1h
 from datetime import datetime
-from xtb_client import XTBClient as APIClient
+from xtb_client import XTBClient
 import ssl
 import random
 import requests
