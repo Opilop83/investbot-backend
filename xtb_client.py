@@ -43,7 +43,7 @@ class XTBClient:
             raise ValueError("Brak wymaganych danych logowania do XTB API!")
 
         # Poprawiona inicjalizacja klienta XTB - bez parametru URL
-        self.client = APIClient()
+        self.client = self
 
         # Logowanie do API XTB
         self.client.login(XTB_USER, XTB_PASSWORD)
