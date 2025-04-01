@@ -18,6 +18,8 @@ import ssl
 import random
 import requests
 import traceback
+import logging
+
 load_dotenv()
 XTB_USER = os.getenv("XTB_USER")
 XTB_PASSWORD = os.getenv("XTB_PASSWORD")
