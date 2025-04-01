@@ -46,7 +46,7 @@ class XTBClient:
         self.client = self
 
         # Logowanie do API XTB
-        self.client.connect(XTB_USER, XTB_PASSWORD)
+        self.connect()
 
 
     def rate_limited_request(self, function, *args, **kwargs):
