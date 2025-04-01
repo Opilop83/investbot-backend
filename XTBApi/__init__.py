@@ -1,2 +1,4 @@
-from .api import XTBClient
+from ..xtb_client import XTBClient
+
+
 
