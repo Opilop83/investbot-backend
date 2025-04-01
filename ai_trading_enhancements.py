@@ -47,7 +47,7 @@ def generate_trading_signal_1m(df, xtb_client, symbol):
             return "sell"
 
     except Exception as e:
-        print(f"⚠️ Błąd w generowaniu sygnału 1M dla {symbol}: {e}")
+        logging.info(f"⚠️ Błąd w generowaniu sygnału 1M dla {symbol}: {e}")
 
     return "hold"
 
@@ -80,7 +80,7 @@ def generate_trading_signal_5m(df, xtb_client, symbol):
             return "sell"
 
     except Exception as e:
-        print(f"⚠️ Błąd w generowaniu sygnału 5M dla {symbol}: {e}")
+        logging.info(f"⚠️ Błąd w generowaniu sygnału 5M dla {symbol}: {e}")
 
     return "hold"
 
@@ -108,7 +108,7 @@ def generate_trading_signal_15m(df, xtb_client, symbol):
             return "sell"
 
     except Exception as e:
-        print(f"⚠️ Błąd w generowaniu sygnału 15M dla {symbol}: {e}")
+        logging.info(f"⚠️ Błąd w generowaniu sygnału 15M dla {symbol}: {e}")
 
     return "hold"
 
@@ -132,7 +132,7 @@ def generate_trading_signal_1h(df, xtb_client, symbol):
             return "sell"
 
     except Exception as e:
-        print(f"⚠️ Błąd w generowaniu sygnału 1H dla {symbol}: {e}")
+        logging.info(f"⚠️ Błąd w generowaniu sygnału 1H dla {symbol}: {e}")
 
     return "hold"
 
