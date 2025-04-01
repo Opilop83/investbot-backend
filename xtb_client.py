@@ -19,6 +19,7 @@ import random
 import requests
 import traceback
 import logging
+logging.info(f"🔧 DEBUG ENV XTB_API_URL: {self.api_url}")
 
 load_dotenv()
 XTB_USER = os.getenv("XTB_USER")
@@ -46,6 +47,7 @@ class XTBClient:
 
         # Poprawiona inicjalizacja klienta XTB - bez parametru URL
         self.client = self
+        logging.info(f"🔧 DEBUG ENV XTB_API_URL: {self.api_url}")
 
         # Logowanie do API XTB
         self.connect()
