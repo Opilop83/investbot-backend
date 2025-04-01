@@ -7,6 +7,8 @@ from keras import Input
 from analytics import calculate_indicators
 from tensorflow.keras.preprocessing.sequence import TimeseriesGenerator
 from news_analyzer import get_sentiment  # Import funkcji analizy sentymentu
+import logging
+
 
 def generate_trading_signal_1m(df, xtb_client, symbol):
     """Generuje sygnał kupna/sprzedaży dla interwału 1 minuta."""
