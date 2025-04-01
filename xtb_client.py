@@ -66,16 +66,16 @@ class XTBClient:
                 # ✅ Jeśli WebSocket już istnieje, zamykamy je przed otwarciem nowego
                 if self.ws:
                     try:
-                        print("⚠️ Zamykam aktywne połączenie WebSocket...")
+                        logging.info("⚠️ Zamykam aktywne połączenie WebSocket...")
                         self.ws.close()
                         time.sleep(2)
                     except Exception as e:
-                        print(f"⚠️ Brak aktywnego WebSocket do zamknięcia. ({e})")
+                        logging.info(f"⚠️ Brak aktywnego WebSocket do zamknięcia. ({e})")
 
                 self.ws = None  # Resetujemy WebSocket, aby uniknąć błędów
 
                 # 🔹 Tworzymy nowe połączenie WebSocket
-                print(f"🔄 Próba {attempt}/{retries}: Logowanie do XTB API...")
+                logging.info(f"🔄 Próba {attempt}/{retries}: Logowanie do XTB API...")
                 self.ws = websocket.create_connection(XTB_API_URL)
 
                 login_payload = json.dumps({
@@ -94,24 +94,24 @@ class XTBClient:
                     self.session_id = response.get("streamSessionId")
 
                     if self.session_id:
-                        print(f"✅ Zalogowano do XTB API! `streamSessionId`: {self.session_id}")
+                        logging.info(f"✅ Zalogowano do XTB API! `streamSessionId`: {self.session_id}")
                         return True  # Sukces, kończymy pętlę
                     else:
-                        print(f"⚠️ Brak `streamSessionId`! Próba {attempt}/{retries}. Czekam {wait_time}s...")
+                        logging.info(f"⚠️ Brak `streamSessionId`! Próba {attempt}/{retries}. Czekam {wait_time}s...")
                         time.sleep(wait_time)
                         continue  # Kolejna próba
 
                 else:
-                    print(f"❌ Błąd logowania: {response}")
+                    logging.info(f"❌ Błąd logowania: {response}")
                     time.sleep(wait_time)
 
             except Exception as e:
                 if "SocketError" in str(e) or "LOGIN_TIMEOUT" in str(e):
-                    print(f"⚠️ XTB API zerwało połączenie. Próba {attempt}/{retries}. Czekam {wait_time}s...")
+                    logging.info(f"⚠️ XTB API zerwało połączenie. Próba {attempt}/{retries}. Czekam {wait_time}s...")
                     time.sleep(wait_time)
                     continue  # Kolejna próba logowania
                 else:
-                    print(f"❌ Błąd podczas logowania do API XTB: {e}")
+                    logging.info(f"❌ Błąd podczas logowania do API XTB: {e}")
                     time.sleep(wait_time)
 
             # Po błędzie zamykamy WebSocket
@@ -122,7 +122,7 @@ class XTBClient:
             self.session_id = None  # Resetujemy session_id
             time.sleep(wait_time)  # Czekamy przed kolejną próbą
 
-        print("❌ Nie udało się połączyć z XTB API po kilku próbach.")
+        logging.info("❌ Nie udało się połączyć z XTB API po kilku próbach.")
         return False  # Zwrot False jeśli po `retries` próbach nie udało się połączyć
     
     
@@ -139,19 +139,19 @@ class XTBClient:
     def ensure_connection(self):
         """Sprawdza połączenie i loguje ponownie, jeśli WebSocket jest rozłączony."""
         if not self.is_connection_active():
-            print("🔄 Połączenie z XTB API zerwane. Ponawiam logowanie...")
+            logging.info("🔄 Połączenie z XTB API zerwane. Ponawiam logowanie...")
             self.reconnect()
 
     def load_assets_from_excel(self):
         """Ładuje symbole z pliku Excel."""
         if not os.path.exists(self.assets_file):
-            print(f"❌ Plik {self.assets_file} nie istnieje!")
+            logging.info(f"❌ Plik {self.assets_file} nie istnieje!")
             return []
         try:
             df = pd.read_excel(self.assets_file)
             return df["symbol"].dropna().tolist() if "symbol" in df.columns else []
         except Exception as e:
-            print(f"❌ Błąd wczytywania pliku Excel: {e}")
+            logging.info(f"❌ Błąd wczytywania pliku Excel: {e}")
             return []
 
     def is_connection_active(self):
@@ -163,7 +163,7 @@ class XTBClient:
                 return True
             return False
         except Exception as e:
-            print(f"⚠️ WebSocket prawdopodobnie nie działa: {e}")
+            logging.info(f"⚠️ WebSocket prawdopodobnie nie działa: {e}")
             return False
 
 
@@ -174,51 +174,51 @@ class XTBClient:
             try:
                 # ✅ Jeśli WebSocket jest już aktywny, nie rób nic
                 if self.is_connection_active():
-                    print("✅ WebSocket już działa. Nie trzeba ponownie łączyć.")
+                    logging.info("✅ WebSocket już działa. Nie trzeba ponownie łączyć.")
                     return True
 
-                print(f"🔄 Próba {attempt}/{max_attempts}: Ponawiam logowanie do XTB API...")
+                logging.info(f"🔄 Próba {attempt}/{max_attempts}: Ponawiam logowanie do XTB API...")
 
                 # ✅ Bezpieczne zamknięcie WebSocket, jeśli istnieje
                 if self.ws:
                     try:
                         if self.ws.connected:
-                            print("⚠️ Zamykam aktywne połączenie WebSocket...")
+                            logging.info("⚠️ Zamykam aktywne połączenie WebSocket...")
                             self.ws.close()
                         else:
-                            print("⚠️ WebSocket już był zamknięty.")
+                            logging.info("⚠️ WebSocket już był zamknięty.")
                     except Exception as e:
-                        print(f"⚠️ Błąd przy zamykaniu WebSocket: {e}")
+                        logging.info(f"⚠️ Błąd przy zamykaniu WebSocket: {e}")
 
                     self.ws = None  # Resetuj instancję WebSocket
 
                 # ✅ Spróbuj wylogować się, jeśli sesja istnieje
                 if self.session_id:
                     try:
-                        print("🔄 Wylogowuję aktywną sesję XTB...")
+                        logging.info("🔄 Wylogowuję aktywną sesję XTB...")
                         self.logout()  # Jeśli masz metodę `logout()`, użyj jej
                         self.session_id = None
                     except Exception as e:
-                        print(f"⚠️ Błąd przy wylogowywaniu: {e}")
+                        logging.info(f"⚠️ Błąd przy wylogowywaniu: {e}")
 
                 # ✅ Spróbuj ponownie połączyć się z API
-                print("🔄 Logowanie do XTB API...")
+                logging.info("🔄 Logowanie do XTB API...")
                 if not self.connect():
-                    print("❌ Błąd połączenia z API XTB.")
+                    logging.info("❌ Błąd połączenia z API XTB.")
                     raise ConnectionError("Nie udało się połączyć z API XTB.")
 
                 if self.session_id:
-                    print(f"✅ Ponownie połączono z XTB API! `streamSessionId`: {self.session_id}")
+                    logging.info(f"✅ Ponownie połączono z XTB API! `streamSessionId`: {self.session_id}")
                     return True
 
             except Exception as e:
-                print(f"❌ Błąd reconnecta: {e}")
+                logging.info(f"❌ Błąd reconnecta: {e}")
 
             # ⏳ Stopniowe zwiększanie czasu oczekiwania między próbami (np. 5s, 7s, 10s...)
             wait_time += random.uniform(2, 5)
             time.sleep(wait_time)
 
-        print("❌ Nie udało się ponownie połączyć z XTB API.")
+        logging.info("❌ Nie udało się ponownie połączyć z XTB API.")
         return False
 
 
@@ -230,7 +230,7 @@ class XTBClient:
         try:
             # ✅ Sprawdzamy, czy w ogóle jest sesja do zamknięcia
             if not self.session_id:
-                print("⚠️ Brak aktywnej sesji `session_id`. Nie ma potrzeby wylogowania.")
+                logging.info("⚠️ Brak aktywnej sesji `session_id`. Nie ma potrzeby wylogowania.")
                 return True
 
             if self.ws:
@@ -241,28 +241,28 @@ class XTBClient:
                     response = json.loads(self.ws.recv())
 
                     if response.get("status"):
-                        print("✅ Poprawnie wylogowano z XTB API.")
+                        logging.info("✅ Poprawnie wylogowano z XTB API.")
                     else:
-                        print(f"⚠️ Błąd wylogowania: {response}")
+                        logging.info(f"⚠️ Błąd wylogowania: {response}")
 
                 except Exception as e:
-                    print(f"⚠️ Błąd podczas wysyłania żądania `logout`: {e}")
+                    logging.info(f"⚠️ Błąd podczas wysyłania żądania `logout`: {e}")
 
                 # ✅ Bezpieczne zamykanie WebSocket
                 try:
                     self.ws.close()
-                    print("🔌 WebSocket zamknięty.")
+                    logging.info("🔌 WebSocket zamknięty.")
                 except Exception as e:
-                    print(f"⚠️ Błąd podczas zamykania WebSocket: {e}")
+                    logging.info(f"⚠️ Błąd podczas zamykania WebSocket: {e}")
 
                 self.ws = None  # Reset WebSocket
                 self.session_id = None  # Reset session_id
 
             else:
-                print("⚠️ Brak aktywnego WebSocket do zamknięcia.")
+                logging.info("⚠️ Brak aktywnego WebSocket do zamknięcia.")
 
         except Exception as e:
-            print(f"❌ Błąd podczas wylogowania: {e}")
+            logging.info(f"❌ Błąd podczas wylogowania: {e}")
             self.ws = None  # Czyszczenie obiektu WebSocket po błędzie
             self.session_id = None  # Reset sesji po błędzie
 
@@ -275,9 +275,9 @@ class XTBClient:
             self.disconnect_websocket()  # Spróbuj zamknąć poprzednie połączenie
             time.sleep(3)  # Krótka pauza
             self.connect_websocket()  # Ponowne połączenie
-            print("✅ Ponownie połączono WebSocket.")
+            logging.info("✅ Ponownie połączono WebSocket.")
         except Exception as e:
-            print(f"❌ Błąd ponownego łączenia WebSocket: {e}")
+            logging.info(f"❌ Błąd ponownego łączenia WebSocket: {e}")
 
 
     def get_tick_size(self, symbol):
@@ -286,7 +286,7 @@ class XTBClient:
         if symbol_data and 'tickSize' in symbol_data:
             return float(symbol_data['tickSize'])
         else:
-            print(f"❌ Błąd: tick_size dla {symbol} to None!")
+            logging.info(f"❌ Błąd: tick_size dla {symbol} to None!")
             return 0.01  # Domyślna wartość dla bezpieczeństwa
 
 
@@ -301,13 +301,13 @@ class XTBClient:
         filtered_symbols = []
 
         for symbol in self.SELECTED_SYMBOLS:
-            print(f"📥 Pobieram dane świecowe dla {symbol} (1H)...")
+            logging.info(f"📥 Pobieram dane świecowe dla {symbol} (1H)...")
 
             # Pobranie danych 1H (60 min) – 30 dni historii
             df = self.get_candlestick_data(symbol, 60, 60)
 
             if df is None or df.empty:
-                print(f"⚠️ Brak danych świecowych dla {symbol}, pomijam.")
+                logging.info(f"⚠️ Brak danych świecowych dla {symbol}, pomijam.")
                 continue
 
             # **Obliczenie wskaźników dla interwału 1H**
@@ -318,7 +318,7 @@ class XTBClient:
             missing_indicators = [ind for ind in required_indicators if ind not in df.columns]
 
             if missing_indicators:
-                print(f"⚠️ Brak wymaganych wskaźników dla {symbol}: {', '.join(missing_indicators)}. Pomijam.")
+                logging.info(f"⚠️ Brak wymaganych wskaźników dla {symbol}: {', '.join(missing_indicators)}. Pomijam.")
                 continue
 
             # Pobranie ostatnich wartości wskaźników
@@ -332,20 +332,20 @@ class XTBClient:
 
             # **1️⃣ Filtr ATR i ADX (unikamy niskiej zmienności i słabych trendów)**
             if atr < min_atr or adx < min_adx:
-                print(f"⚠️ Symbol {symbol} nie spełnia kryteriów zmienności/trendu (ATR={atr:.2f}, ADX={adx:.2f}). Pomijam.")
+                logging.info(f"⚠️ Symbol {symbol} nie spełnia kryteriów zmienności/trendu (ATR={atr:.2f}, ADX={adx:.2f}). Pomijam.")
                 continue
 
             # **2️⃣ Filtr konsolidacji - zbyt wąski zakres wsparcia/oporu**
             if (resistance - support) < last_price * max_range_factor:
-                print(f"⚠️ Konsolidacja: wsparcie ({support:.5f}) i opór ({resistance:.5f}) są zbyt blisko siebie dla {symbol}. Pomijam.")
+                logging.info(f"⚠️ Konsolidacja: wsparcie ({support:.5f}) i opór ({resistance:.5f}) są zbyt blisko siebie dla {symbol}. Pomijam.")
                 continue
 
       
             # ✅ Jeśli symbol przeszedł wszystkie testy, dodajemy go do listy
-            print(f"✅ Symbol {symbol} spełnia kryteria (ATR={atr:.2f}, ADX={adx:.2f}) i nie jest w konsolidacji.")
+            logging.info(f"✅ Symbol {symbol} spełnia kryteria (ATR={atr:.2f}, ADX={adx:.2f}) i nie jest w konsolidacji.")
             filtered_symbols.append(symbol)
 
-        print(f"✅ Wyfiltrowano {len(filtered_symbols)} aktywów spełniających kryteria.")
+        logging.info(f"✅ Wyfiltrowano {len(filtered_symbols)} aktywów spełniających kryteria.")
         return filtered_symbols
 
 
@@ -378,10 +378,10 @@ class XTBClient:
                     status
                 ])
 
-            print(f"📜 Zalogowano decyzję: {action} dla {symbol}, order: {order_id}")
+            logging.info(f"📜 Zalogowano decyzję: {action} dla {symbol}, order: {order_id}")
 
         except Exception as e:
-            print(f"❌ Błąd zapisu do logu: {e}")
+            logging.info(f"❌ Błąd zapisu do logu: {e}")
 
 
 
@@ -419,7 +419,7 @@ class XTBClient:
 
         # Sprawdzamy, czy zmiana przekracza próg anomalii
         if abs(latest_bid_change) > threshold * bid_std or abs(latest_ask_change) > threshold * ask_std:
-            print(f"⚠️ ANOMALIA CENOWA dla {symbol}! Skok ceny: Bid {latest_bid_change:.2f}, Ask {latest_ask_change:.2f}")
+            logging.info(f"⚠️ ANOMALIA CENOWA dla {symbol}! Skok ceny: Bid {latest_bid_change:.2f}, Ask {latest_ask_change:.2f}")
             return True  # Wykryto anomalię
 
         return False  # Brak anomalii    
@@ -433,7 +433,7 @@ class XTBClient:
 
         # 🛑 **Walidacja symbolu**
         if not symbol or not isinstance(symbol, str):
-            print(f"❌ Nieprawidłowy symbol: {symbol} ({type(symbol)})")
+            logging.info(f"❌ Nieprawidłowy symbol: {symbol} ({type(symbol)})")
             return None
 
         request_payload = json.dumps({"command": "getSymbol", "arguments": {"symbol": symbol}})
@@ -442,13 +442,13 @@ class XTBClient:
             try:
                 # 🔄 **Sprawdzenie połączenia przed wysłaniem żądania**
                 if not self.is_connection_active():
-                    print(f"⚠️ WebSocket nieaktywny. Ponawiam połączenie... (Próba {attempt}/{retries})")
+                    logging.info(f"⚠️ WebSocket nieaktywny. Ponawiam połączenie... (Próba {attempt}/{retries})")
                     self.reconnect()
                     self.ensure_connection()
 
                 # 🛑 **Sprawdzenie, czy WebSocket jest gotowy**
                 if not self.ws:
-                    print(f"❌ WebSocket nie został poprawnie zainicjalizowany. Przerywam próbę {attempt}.")
+                    logging.info(f"❌ WebSocket nie został poprawnie zainicjalizowany. Przerywam próbę {attempt}.")
                     time.sleep(attempt * random.uniform(1, 2))
                     continue
 
@@ -457,12 +457,12 @@ class XTBClient:
 
                 # 🛑 **Sprawdzenie poprawności odpowiedzi**
                 if not response or not isinstance(response, dict):
-                    print(f"❌ Niepoprawna odpowiedź API dla {symbol}. Próba {attempt}/{retries}")
+                    logging.info(f"❌ Niepoprawna odpowiedź API dla {symbol}. Próba {attempt}/{retries}")
                     time.sleep(attempt * random.uniform(1, 2))
                     continue
 
                 if not response.get("status"):
-                    print(f"⚠️ API XTB zwróciło błąd dla {symbol}: {response}. Próba {attempt}/{retries}")
+                    logging.info(f"⚠️ API XTB zwróciło błąd dla {symbol}: {response}. Próba {attempt}/{retries}")
                     time.sleep(attempt * random.uniform(1, 2))
                     continue
 
@@ -470,12 +470,12 @@ class XTBClient:
 
                 # 🔄 **Obsługa pustego returnData (brak danych)**
                 if not return_data or not isinstance(return_data, dict):
-                    print(f"⚠️ Brak `returnData` w odpowiedzi API dla {symbol}. Czekam 3s i ponawiam pobieranie...")
+                    logging.info(f"⚠️ Brak `returnData` w odpowiedzi API dla {symbol}. Czekam 3s i ponawiam pobieranie...")
                     time.sleep(3)
                     if attempt < retries:
                         continue  # Spróbuj ponownie pobrać cenę
                     else:
-                        print(f"❌ Nie udało się pobrać danych dla {symbol} po {retries} próbach. Pomijam.")
+                        logging.info(f"❌ Nie udało się pobrać danych dla {symbol} po {retries} próbach. Pomijam.")
                         return None
 
                 ask = return_data.get("ask")
@@ -483,7 +483,7 @@ class XTBClient:
 
                 # 🛑 **Sprawdzenie wartości ask/bid**
                 if ask is None or bid is None:
-                    print(f"⚠️ Brak danych ask/bid dla {symbol}. Próba {attempt}/{retries}")
+                    logging.info(f"⚠️ Brak danych ask/bid dla {symbol}. Próba {attempt}/{retries}")
                     time.sleep(attempt * random.uniform(1, 2))
                     continue
 
@@ -491,28 +491,28 @@ class XTBClient:
 
                 # 🛑 **Sprawdzenie poprawności ceny**
                 if not isinstance(price, (int, float)) or price <= 0:
-                    print(f"⚠️ Niepoprawna cena ({price}) dla {symbol}. Próba {attempt}/{retries}")
+                    logging.info(f"⚠️ Niepoprawna cena ({price}) dla {symbol}. Próba {attempt}/{retries}")
                     time.sleep(attempt * random.uniform(1, 2))
                     continue
 
-                print(f"✅ Cena dla {symbol} (próba {attempt}): ask={ask}, bid={bid}, trade_type={trade_type}")
+                logging.info(f"✅ Cena dla {symbol} (próba {attempt}): ask={ask}, bid={bid}, trade_type={trade_type}")
                 return price
 
             except websocket.WebSocketConnectionClosedException:
-                print(f"⚠️ WebSocket rozłączony. Ponawiam połączenie... (Próba {attempt}/{retries})")
+                logging.info(f"⚠️ WebSocket rozłączony. Ponawiam połączenie... (Próba {attempt}/{retries})")
                 self.reconnect()
                 self.ensure_connection()
 
             except json.JSONDecodeError:
-                print(f"❌ Błąd dekodowania JSON w odpowiedzi API dla {symbol}. Próba {attempt}/{retries}")
+                logging.info(f"❌ Błąd dekodowania JSON w odpowiedzi API dla {symbol}. Próba {attempt}/{retries}")
 
             except Exception as e:
-                print(f"❌ Błąd pobierania ceny dla {symbol} (próba {attempt}): {e}")
+                logging.info(f"❌ Błąd pobierania ceny dla {symbol} (próba {attempt}): {e}")
 
             # ⏳ Stopniowe wydłużanie czasu przed kolejną próbą
             time.sleep(attempt * random.uniform(1, 2))
 
-        print(f"❌ Nie udało się pobrać ceny dla {symbol} po {retries} próbach.")
+        logging.info(f"❌ Nie udało się pobrać ceny dla {symbol} po {retries} próbach.")
         return None
 
 
@@ -526,7 +526,7 @@ class XTBClient:
         try:
             self.ws.send(payload)
             response = json.loads(self.ws.recv())
-            print(f"🔍 Debug get_position_details response: {response}")  # Debugowanie odpowiedzi
+            logging.info(f"🔍 Debug get_position_details response: {response}")  # Debugowanie odpowiedzi
 
             if response.get("status"):
                 positions = response["returnData"]
@@ -534,10 +534,10 @@ class XTBClient:
                     if position["order"] == order_id:
                         return position  # Zwracamy szczegóły pozycji, jeśli znajdziemy pasujący order_id
 
-            print(f"⚠️ Nie znaleziono pozycji o ID {order_id}.")
+            logging.info(f"⚠️ Nie znaleziono pozycji o ID {order_id}.")
             return None
         except Exception as e:
-            print(f"❌ Błąd pobierania szczegółów pozycji {order_id}: {e}")
+            logging.info(f"❌ Błąd pobierania szczegółów pozycji {order_id}: {e}")
             return None
 
 
@@ -551,17 +551,17 @@ class XTBClient:
         try:
             self.ws.send(request_payload)
             response = json.loads(self.ws.recv())
-            print(f"🔍 Debug response: {response}")  # Pełna odpowiedź API
+            logging.info(f"🔍 Debug response: {response}")  # Pełna odpowiedź API
 
             if response.get("status"):
                 min_lot_size = response["returnData"].get("lotMin", 0.01)
                 step_lot_size = response["returnData"].get("lotStep", 0.01)
                 max_lot_size = response["returnData"].get("lotMax", 100.0)  # Domyślnie 100, jeśli brak danych
-                print(f"🔍 lotMin: {min_lot_size}, lotStep: {step_lot_size}, lotMax: {max_lot_size}")
+                logging.info(f"🔍 lotMin: {min_lot_size}, lotStep: {step_lot_size}, lotMax: {max_lot_size}")
                 return min_lot_size, step_lot_size, max_lot_size
 
         except Exception as e:
-            print(f"❌ Błąd pobierania minimalnego wolumenu dla {symbol}: {e}")
+            logging.info(f"❌ Błąd pobierania minimalnego wolumenu dla {symbol}: {e}")
 
         return 0.01, 0.01, 100.0  # Domyślne wartości w razie błędu
 
@@ -579,13 +579,13 @@ class XTBClient:
     def calculate_volume(self, entry_price, min_volume, step_lot_size, max_volume):
         """Oblicza optymalny wolumen transakcji, uwzględniając min/max lot oraz krok lotu."""
         if entry_price <= 0:
-            print("❌ Błędna wartość entry_price.")
+            logging.info("❌ Błędna wartość entry_price.")
             return min_volume
 
         target_min_value = 100  # Minimalna wartość transakcji w PLN
         target_max_value = 400  # Maksymalna wartość transakcji w PLN
 
-        print(f"🔍 Debug: entry_price={entry_price}, min_volume={min_volume}, step_lot_size={step_lot_size}, max_volume={max_volume}")
+        logging.info(f"🔍 Debug: entry_price={entry_price}, min_volume={min_volume}, step_lot_size={step_lot_size}, max_volume={max_volume}")
 
         # **Krok 1: Obliczamy początkowy wolumen na podstawie target_min_value**
         volume = target_min_value / entry_price
@@ -606,7 +606,7 @@ class XTBClient:
             volume = round((target_max_value / entry_price) / step_lot_size) * step_lot_size
             volume = max(min_volume, min(volume, max_volume))  # Jeszcze raz sprawdzamy min/max
 
-        print(f"✅ Finalny wolumen: {volume} (dostosowany do kroków lotu: {step_lot_size})")
+        logging.info(f"✅ Finalny wolumen: {volume} (dostosowany do kroków lotu: {step_lot_size})")
         return volume
 
 
@@ -626,7 +626,7 @@ class XTBClient:
                 if response.get("status"):
                     trades = response["returnData"]
                     if not trades:
-                        print("✅ Brak otwartych pozycji.")
+                        logging.info("✅ Brak otwartych pozycji.")
                         return pd.DataFrame()
 
                     df = pd.DataFrame(trades)
@@ -636,7 +636,7 @@ class XTBClient:
                         if "instrument" in df.columns:
                             df.rename(columns={"instrument": "symbol"}, inplace=True)
                         else:
-                            print(f"⚠️ Brak kolumny 'symbol'. Oto dostępne kolumny: {df.columns}")
+                            logging.info(f"⚠️ Brak kolumny 'symbol'. Oto dostępne kolumny: {df.columns}")
                             return pd.DataFrame()
 
                     df['type'] = df['cmd'].map({0: 'buy', 1: 'sell'})
@@ -646,17 +646,17 @@ class XTBClient:
                     return df
 
                 else:
-                    print(f"❌ Błąd pobierania otwartych pozycji (próba {attempt}/{retry_attempts}): {response}")
+                    logging.info(f"❌ Błąd pobierania otwartych pozycji (próba {attempt}/{retry_attempts}): {response}")
         
             except Exception as e:
-                print(f"❌ Błąd pobierania otwartych pozycji (próba {attempt}/{retry_attempts}): {e}")
+                logging.info(f"❌ Błąd pobierania otwartych pozycji (próba {attempt}/{retry_attempts}): {e}")
             
                 if attempt < retry_attempts:
-                    print("🔄 Ponawiam połączenie z XTB API...")
+                    logging.info("🔄 Ponawiam połączenie z XTB API...")
                     self.reconnect()
                     time.sleep(2)
 
-        print("⚠️ Nie udało się pobrać otwartych pozycji po kilku próbach.")
+        logging.info("⚠️ Nie udało się pobrać otwartych pozycji po kilku próbach.")
         return pd.DataFrame()  # Zwróć pusty DataFrame, jeśli nie uda się pobrać danych.
 
 
@@ -685,14 +685,14 @@ class XTBClient:
                 if trades:
                     return pd.DataFrame(trades)  # Konwersja na DataFrame dla łatwiejszej analizy
                 else:
-                    print("✅ Brak otwartych pozycji.")
+                    logging.info("✅ Brak otwartych pozycji.")
                     return pd.DataFrame()  # Zwracamy pusty DataFrame
             else:
-                print(f"❌ Błąd pobierania pozycji: {response}")
+                logging.info(f"❌ Błąd pobierania pozycji: {response}")
                 return None
 
         except Exception as e:
-            print(f"❌ Błąd podczas pobierania pozycji: {e}")
+            logging.info(f"❌ Błąd podczas pobierania pozycji: {e}")
             return None
 
     def requires_price_in_close(self):
@@ -719,14 +719,14 @@ class XTBClient:
             error_code = response.get("errorCode", "")
 
             if error_code in ["BE001", "BE002"]:
-                print("⚠️ API wymaga podania ceny przy zamykaniu pozycji.")
+                logging.info("⚠️ API wymaga podania ceny przy zamykaniu pozycji.")
                 return True
             else:
-                print("✅ API nie wymaga podania ceny przy zamykaniu pozycji.")
+                logging.info("✅ API nie wymaga podania ceny przy zamykaniu pozycji.")
                 return False
 
         except Exception as e:
-            print(f"❌ Błąd testowania wymaganej ceny w zamykaniu pozycji: {e}")
+            logging.info(f"❌ Błąd testowania wymaganej ceny w zamykaniu pozycji: {e}")
             return False  # Domyślnie zakładamy, że nie jest wymagana
 
 
@@ -737,22 +737,22 @@ class XTBClient:
             open_positions = self.get_trades(openedOnly=True)
 
             if open_positions is None:
-                print(f"⚠️ Próba {attempt}/{retry_attempts}: `get_trades()` zwróciło None. Ponawiam...")
+                logging.info(f"⚠️ Próba {attempt}/{retry_attempts}: `get_trades()` zwróciło None. Ponawiam...")
                 time.sleep(2)
                 continue  # Ponów próbę pobrania
 
             if open_positions.empty:
-                print(f"✅ Brak otwartych pozycji. Order {order_id} nie istnieje.")
+                logging.info(f"✅ Brak otwartych pozycji. Order {order_id} nie istnieje.")
                 return False
 
             if order_id in open_positions["order"].values:
-                print(f"✅ Order {order_id} jest nadal aktywny.")
+                logging.info(f"✅ Order {order_id} jest nadal aktywny.")
                 return True
 
-            print(f"⚠️ Order {order_id} nie został znaleziony w otwartych pozycjach. Ponawiam próbę...")
+            logging.info(f"⚠️ Order {order_id} nie został znaleziony w otwartych pozycjach. Ponawiam próbę...")
             time.sleep(2)
 
-        print(f"❌ Order {order_id} nadal nie został znaleziony po {retry_attempts} próbach.")
+        logging.info(f"❌ Order {order_id} nadal nie został znaleziony po {retry_attempts} próbach.")
         return False
 
 
@@ -766,7 +766,7 @@ class XTBClient:
         open_positions = self.get_trades(openedOnly=True)  # Pobieranie dokładniejsze niż get_open_positions()
 
         if open_positions.empty or order_id not in open_positions["order"].values:
-            print(f"⚠️ Pozycja {order_id} nie istnieje w aktualnie otwartych pozycjach! Pomijam zamknięcie.")
+            logging.info(f"⚠️ Pozycja {order_id} nie istnieje w aktualnie otwartych pozycjach! Pomijam zamknięcie.")
             return False  
 
         position = open_positions[open_positions["order"] == order_id].iloc[0]
@@ -778,7 +778,7 @@ class XTBClient:
         # ✅ Pobranie aktualnych danych rynkowych
         symbol_info = self.get_symbol_info(symbol)
         if not symbol_info:
-            print(f"❌ Nie udało się pobrać informacji o symbolu {symbol}. Anulowanie zamknięcia.")
+            logging.info(f"❌ Nie udało się pobrać informacji o symbolu {symbol}. Anulowanie zamknięcia.")
             return False
 
         bid = symbol_info.get("bid", 0)
@@ -786,14 +786,14 @@ class XTBClient:
         close_price = bid if position["cmd"] == 1 else ask  # Dla SELL zamykasz na BID, dla BUY na ASK
         # ✅ Debugowanie marży przed zamknięciem pozycji
         margin_calculated = self.calculate_margin(symbol, volume, open_price)
-        print(f"📊 Przed zamknięciem: {symbol} | Marża: {margin_calculated} | Open Price: {open_price} | Close Price: {close_price}")
+        logging.info(f"📊 Przed zamknięciem: {symbol} | Marża: {margin_calculated} | Open Price: {open_price} | Close Price: {close_price}")
 
 
         if close_price == 0:
-            print(f"❌ Nie udało się pobrać poprawnej ceny zamknięcia dla {symbol}.")
+            logging.info(f"❌ Nie udało się pobrać poprawnej ceny zamknięcia dla {symbol}.")
             return False
 
-        print(f"🔍 Próba zamknięcia {symbol} | Cena: {close_price} | Wolumen: {volume}")
+        logging.info(f"🔍 Próba zamknięcia {symbol} | Cena: {close_price} | Wolumen: {volume}")
 
         # ✅ Pobranie aktualnej ceny zamknięcia, jeśli nie istnieje w pozycji
         close_price = position.get("close_price", None)
@@ -806,7 +806,7 @@ class XTBClient:
         else:  # BUY
             close_price = min(close_price, symbol_info["ask"])
 
-        print(f"🔍 Poprawiona cena zamknięcia dla {symbol}: {close_price}")
+        logging.info(f"🔍 Poprawiona cena zamknięcia dla {symbol}: {close_price}")
 
 
         # ✅ Przygotowanie payloadu
@@ -824,41 +824,41 @@ class XTBClient:
 
         request_payload = json.dumps({"command": "tradeTransaction", "arguments": {"tradeTransInfo": trade_info}})
 
-        print(f"📩 Payload zamknięcia: {request_payload}")
+        logging.info(f"📩 Payload zamknięcia: {request_payload}")
 
 
         for attempt in range(1, retry_attempts + 1):
             try:
                 if not self.is_connection_active():
-                    print(f"⚠️ WebSocket rozłączony. Ponawiam połączenie... (Próba {attempt}/{retry_attempts})")
+                    logging.info(f"⚠️ WebSocket rozłączony. Ponawiam połączenie... (Próba {attempt}/{retry_attempts})")
                     self.reconnect()
                     self.ensure_connection()
 
-                print(f"📤 Wysyłam żądanie do API... (Próba {attempt}/{retry_attempts})")
+                logging.info(f"📤 Wysyłam żądanie do API... (Próba {attempt}/{retry_attempts})")
                 self.ws.send(request_payload)
                 response = json.loads(self.ws.recv())
 
-                print(f"🔍 Debug - pełna odpowiedź API XTB: {response}")
+                logging.info(f"🔍 Debug - pełna odpowiedź API XTB: {response}")
 
                 if response.get("status"):
-                    print(f"✅ Pozycja {order_id} zamknięta.")
+                    logging.info(f"✅ Pozycja {order_id} zamknięta.")
                     return True  # Zakończ funkcję
 
                 elif response.get("errorCode") == "BE9":
-                    print(f"⚠️ Pozycja {order_id} nie istnieje w API. Sprawdzam jeszcze raz otwarte pozycje...")
+                    logging.info(f"⚠️ Pozycja {order_id} nie istnieje w API. Sprawdzam jeszcze raz otwarte pozycje...")
                     if not self.is_order_active(order_id):
-                        print(f"✅ Order {order_id} faktycznie został zamknięty.")
+                        logging.info(f"✅ Order {order_id} faktycznie został zamknięty.")
                         return True
 
                 else:
-                    print(f"❌ API zwróciło błąd: {response.get('errorDescr', 'Nieznany błąd')}")
+                    logging.info(f"❌ API zwróciło błąd: {response.get('errorDescr', 'Nieznany błąd')}")
 
             except Exception as e:
-                print(f"❌ Błąd zamykania pozycji: {e}")
+                logging.info(f"❌ Błąd zamykania pozycji: {e}")
 
             time.sleep(attempt * 2)  # Opóźnienie dla kolejnej próby
 
-        print(f"❌ Nie udało się zamknąć pozycji po {retry_attempts} próbach.")
+        logging.info(f"❌ Nie udało się zamknąć pozycji po {retry_attempts} próbach.")
         return False
 
 
@@ -888,19 +888,19 @@ class XTBClient:
                 response = self.ws.recv()
 
                 if not response:
-                    print(f"❌ Pusta odpowiedź API XTB dla {symbol} ({interval}M), próba {attempt}/{retries}. Ponawiam...")
+                    logging.info(f"❌ Pusta odpowiedź API XTB dla {symbol} ({interval}M), próba {attempt}/{retries}. Ponawiam...")
                     time.sleep(2)
                     continue
 
                 response = json.loads(response)
 
                 if not response.get("status"):
-                    print(f"❌ Błąd API XTB: {response}. Próba {attempt}/{retries}.")
+                    logging.info(f"❌ Błąd API XTB: {response}. Próba {attempt}/{retries}.")
                     time.sleep(2)
                     continue
 
                 if "returnData" not in response or "rateInfos" not in response["returnData"]:
-                    print(f"❌ Brak klucza 'returnData' w odpowiedzi API dla {symbol}: {response}")
+                    logging.info(f"❌ Brak klucza 'returnData' w odpowiedzi API dla {symbol}: {response}")
                     time.sleep(2)
                     continue
 
@@ -908,14 +908,14 @@ class XTBClient:
                 digits = response["returnData"]["digits"]
 
                 if not prices:
-                    print(f"❌ Brak danych świecowych dla {symbol} ({interval}M). Próba {attempt}/{retries}.")
+                    logging.info(f"❌ Brak danych świecowych dla {symbol} ({interval}M). Próba {attempt}/{retries}.")
                     time.sleep(2)
                     continue
 
                 df = self._process_candlestick_data(prices, digits, interval)
 
                 if df is None or df.empty:
-                    print(f"⚠️ {symbol} [interval {interval}]: Otrzymano pusty DataFrame. Ponawiam próbę...")
+                    logging.info(f"⚠️ {symbol} [interval {interval}]: Otrzymano pusty DataFrame. Ponawiam próbę...")
                     time.sleep(2)
                     continue
 
@@ -926,8 +926,8 @@ class XTBClient:
                 ]
 
                 if not invalid_rows.empty:
-                    print(f"❌ {symbol} [{interval}M]: BŁĘDNE ŚWIECE! Odrzucam {len(invalid_rows)} świec.")
-                    print(invalid_rows)  # Debug: wyświetlamy problematyczne świece
+                    logging.info(f"❌ {symbol} [{interval}M]: BŁĘDNE ŚWIECE! Odrzucam {len(invalid_rows)} świec.")
+                    logging.info(invalid_rows)  # Debug: wyświetlamy problematyczne świece
                     time.sleep(2)
                     continue  # Spróbujmy pobrać nowe dane
 
@@ -935,38 +935,38 @@ class XTBClient:
                 try:
                     last_candle_time = pd.to_datetime(df["timestamp"].iloc[-1], utc=True).tz_convert(None)  # 🔄 `tz-naive`
                 except Exception as e:
-                    print(f"❌ Błąd konwersji timestampu dla {symbol}: {e}")
+                    logging.info(f"❌ Błąd konwersji timestampu dla {symbol}: {e}")
                     continue  # Spróbuj pobrać dane jeszcze raz
 
                 current_time = datetime.utcnow()  # `tz-naive`
                 delay = (current_time - last_candle_time).total_seconds() / 60  # Opóźnienie w minutach
                 max_delay = interval * 4  # Maksymalne opóźnienie = 4x interwał (np. 60 min dla 15M)
 
-                print(f"💾 Pobranie świec dla {symbol} [interval {interval}]: {len(df)} świec.")
-                print(f"🔍 Ostatnia świeca: {last_candle_time.strftime('%Y-%m-%d %H:%M:%S')} UTC | Opóźnienie: {delay:.1f} min.")
+                logging.info(f"💾 Pobranie świec dla {symbol} [interval {interval}]: {len(df)} świec.")
+                logging.info(f"🔍 Ostatnia świeca: {last_candle_time.strftime('%Y-%m-%d %H:%M:%S')} UTC | Opóźnienie: {delay:.1f} min.")
 
                 if delay > max_delay:
-                    print(f"⚠️ {symbol} [interval {interval}]: Opóźnienie {delay:.1f} min. Pobieram nowe świece...")
+                    logging.info(f"⚠️ {symbol} [interval {interval}]: Opóźnienie {delay:.1f} min. Pobieram nowe świece...")
                     time.sleep(2)
                     continue  # Jeśli świeca jest za stara, próbujemy pobrać nowsze dane
 
                 return df  # ✅ Jeśli wszystko jest OK, zwracamy dane
 
             except ssl.SSLError as ssl_error:
-                print(f"⚠️ Błąd SSL podczas pobierania świec {symbol} ({interval} min), próba {attempt}/{retries}: {ssl_error}")
+                logging.info(f"⚠️ Błąd SSL podczas pobierania świec {symbol} ({interval} min), próba {attempt}/{retries}: {ssl_error}")
                 time.sleep(3)  # Poczekaj dłużej, aby uniknąć natychmiastowego ponowienia
 
             except websocket.WebSocketConnectionClosedException:
-                print(f"⚠️ Połączenie WebSocket zostało zamknięte. Ponawiam połączenie... (Próba {attempt})")
+                logging.info(f"⚠️ Połączenie WebSocket zostało zamknięte. Ponawiam połączenie... (Próba {attempt})")
                 self.reconnect()
                 self.ensure_connection()
 
             except Exception as e:
-                print(f"❌ Błąd pobierania świec {symbol} ({interval} min), próba {attempt}/{retries}: {e}")
+                logging.info(f"❌ Błąd pobierania świec {symbol} ({interval} min), próba {attempt}/{retries}: {e}")
                 time.sleep(2)
 
         # 🔄 **Jeśli po 3 próbach nadal nie mamy danych, wymuszamy reconnect**
-        print(f"❌ Nie udało się pobrać świec dla {symbol} po {retries} próbach. Resetuję połączenie z XTB API...")
+        logging.info(f"❌ Nie udało się pobrać świec dla {symbol} po {retries} próbach. Resetuję połączenie z XTB API...")
         self.reconnect()
         return None
 
@@ -976,14 +976,14 @@ class XTBClient:
         """📊 Przetwarza dane świecowe na DataFrame i oblicza wskaźniki techniczne."""
 
         if not prices:
-            print("⚠️ Otrzymano pustą listę świec.")
+            logging.info("⚠️ Otrzymano pustą listę świec.")
             return None
 
         factor = 10 ** digits
         df = pd.DataFrame(prices)
 
         if df.empty or "ctm" not in df.columns:
-            print("⚠️ Otrzymano pusty lub nieprawidłowy DataFrame.")
+            logging.info("⚠️ Otrzymano pusty lub nieprawidłowy DataFrame.")
             return None
 
         # ✅ Przetwarzanie timestampów i cen
@@ -1004,10 +1004,10 @@ class XTBClient:
         ]
 
         if df.empty:
-            print(f"❌ {interval}M: Po oczyszczeniu danych nie pozostały żadne świece!")
+            logging.info(f"❌ {interval}M: Po oczyszczeniu danych nie pozostały żadne świece!")
             return None  # Brak poprawnych świec do analizy
 
-        print(f"✅ {interval}M: Oczyszczone dane, przekazuję do `calculate_indicators()`")
+        logging.info(f"✅ {interval}M: Oczyszczone dane, przekazuję do `calculate_indicators()`")
         return calculate_indicators(df, interval)
 
     def determine_trend(self, df):
@@ -1038,7 +1038,7 @@ class XTBClient:
             
             # ✅ Sprawdzamy czy `positions` nie jest pusty
             if positions is None or positions.empty:
-                print(f"⚠️ Brak otwartych pozycji w `get_current_sl_tp` dla {symbol}.")
+                logging.info(f"⚠️ Brak otwartych pozycji w `get_current_sl_tp` dla {symbol}.")
                 return None, None  
 
             # ✅ Iterujemy po pozycjach i wyszukujemy symbol
@@ -1048,17 +1048,17 @@ class XTBClient:
                         current_sl = float(position.get("sl", 0))  # Bezpieczny dostęp do SL
                         current_tp = float(position.get("tp", 0))  # Bezpieczny dostęp do TP
 
-                        print(f"🔍 Aktualne SL: {current_sl}, TP: {current_tp} dla {symbol}")
+                        logging.info(f"🔍 Aktualne SL: {current_sl}, TP: {current_tp} dla {symbol}")
                         return current_sl, current_tp
                     except Exception as e:
-                        print(f"❌ Błąd konwersji SL/TP dla {symbol}: {e}")
+                        logging.info(f"❌ Błąd konwersji SL/TP dla {symbol}: {e}")
                         return None, None
 
-            print(f"⚠️ Pozycja dla {symbol} nie została znaleziona. Ustawiam domyślne wartości.")
+            logging.info(f"⚠️ Pozycja dla {symbol} nie została znaleziona. Ustawiam domyślne wartości.")
             return None, None  # Jeśli nie ma pozycji dla symbolu
 
         except Exception as e:
-            print(f"❌ Błąd pobierania SL/TP dla {symbol}: {e}")
+            logging.info(f"❌ Błąd pobierania SL/TP dla {symbol}: {e}")
             return None, None
 
 
@@ -1074,7 +1074,7 @@ class XTBClient:
         - zaokrąglenia do tick_size
         """
 
-        print("\n🔎 --- Obliczanie dynamicznych SL i TP ---")
+        logging.info("\n🔎 --- Obliczanie dynamicznych SL i TP ---")
 
         ask_price = self.get_current_price_with_type(symbol, "buy")
         bid_price = self.get_current_price_with_type(symbol, "sell")
@@ -1083,11 +1083,11 @@ class XTBClient:
             ask_price = float(ask_price)
             bid_price = float(bid_price)
         except ValueError:
-            print(f"❌ BŁĄD: Cena ASK/BID dla {symbol} nie jest liczbą! ASK={ask_price}, BID={bid_price}")
+            logging.info(f"❌ BŁĄD: Cena ASK/BID dla {symbol} nie jest liczbą! ASK={ask_price}, BID={bid_price}")
             return None, None
 
         if ask_price <= 0 or bid_price <= 0:
-            print(f"❌ BŁĄD: Nieprawidłowe ceny dla {symbol} -> ASK: {ask_price}, BID: {bid_price}")
+            logging.info(f"❌ BŁĄD: Nieprawidłowe ceny dla {symbol} -> ASK: {ask_price}, BID: {bid_price}")
             return None, None
 
         # ✅ Pobranie tick_size dla dokładności zaokrąglenia
@@ -1097,14 +1097,14 @@ class XTBClient:
         
         # Obsługa przypadku, gdy `stopsLevel` jest None lub błędne
         if stops_level is None or stops_level <= 0:
-            print(f"⚠️ Brak wartości stopsLevel dla {symbol}, ustawiam domyślnie na {tick_size * 2}")
+            logging.info(f"⚠️ Brak wartości stopsLevel dla {symbol}, ustawiam domyślnie na {tick_size * 2}")
             stops_level = tick_size * 2  # Minimalna wartość zapobiegająca błędom
         
         # ✅ Pobranie danych 1H z ostatnich 7 dni
         df = self.get_candlestick_data(symbol, interval=60, history_days=7*24)
 
         if df is None or df.empty or len(df) < 20:  # Minimum 20 świec dla poprawnej analizy
-            print(f"⚠️ Brak wystarczających danych świecowych dla {symbol}. Używam standardowych poziomów (-4% SL, +8% TP).")
+            logging.info(f"⚠️ Brak wystarczających danych świecowych dla {symbol}. Używam standardowych poziomów (-4% SL, +8% TP).")
             return self.calculate_standard_sl_tp(symbol, trade_type)
 
         # ✅ Obliczenie wsparć i oporów
@@ -1119,7 +1119,7 @@ class XTBClient:
 
         # 📌 **Obsługa pustego ATR przed konwersją**
         if atr is None or atr == "" or pd.isna(atr):
-            print(f"⚠️ Brak poprawnego ATR dla {symbol}. Używam standardowych wartości SL/TP.")
+            logging.info(f"⚠️ Brak poprawnego ATR dla {symbol}. Używam standardowych wartości SL/TP.")
             return self.calculate_standard_sl_tp(symbol, trade_type)
 
         # 📌 **Bezpieczna konwersja wsparcia, oporu i ATR**
@@ -1128,7 +1128,7 @@ class XTBClient:
             resistance = float(resistance) if resistance is not None else None
             atr = float(atr) if atr is not None else None
         except (ValueError, TypeError) as e:
-            print(f"❌ BŁĄD: Niepoprawna wartość Support, Resistance lub ATR dla {symbol}: "
+            logging.info(f"❌ BŁĄD: Niepoprawna wartość Support, Resistance lub ATR dla {symbol}: "
                   f"Support={support}, Resistance={resistance}, ATR={atr}, Błąd: {e}")
             return self.calculate_standard_sl_tp(symbol, trade_type)
 
@@ -1161,7 +1161,7 @@ class XTBClient:
         stop_loss = round(stop_loss, precision)
         take_profit = round(take_profit, precision)
 
-        print(f"✅ Dynamiczne SL/TP dla {symbol}: SL={stop_loss}, TP={take_profit} (Trend: {trend}, ATR: {atr})")
+        logging.info(f"✅ Dynamiczne SL/TP dla {symbol}: SL={stop_loss}, TP={take_profit} (Trend: {trend}, ATR: {atr})")
 
         return stop_loss, take_profit
 
@@ -1185,7 +1185,7 @@ class XTBClient:
         
             # Sprawdzamy, czy API zwróciło poprawną odpowiedź
             if not response.get("status") or "returnData" not in response:
-                print(f"⚠️ Brak poprawnych danych dla {symbol}. Używam domyślnej wartości.")
+                logging.info(f"⚠️ Brak poprawnych danych dla {symbol}. Używam domyślnej wartości.")
                 return 0.01  # Domyślna wartość minimalnego SL/TP
         
             return_data = response["returnData"]
@@ -1199,11 +1199,11 @@ class XTBClient:
             if min_distance == 0:
                 min_distance = max(tick_size * 5, 0.01)  # Ustawiamy minimalny dystans jako 5 ticków
 
-            print(f"✅ Minimalna odległość SL/TP dla {symbol}: {min_distance:.5f}")
+            logging.info(f"✅ Minimalna odległość SL/TP dla {symbol}: {min_distance:.5f}")
             return min_distance
 
         except Exception as e:
-            print(f"❌ Błąd pobierania minimalnej odległości SL/TP dla {symbol}: {e}")
+            logging.info(f"❌ Błąd pobierania minimalnej odległości SL/TP dla {symbol}: {e}")
         
         return 0.01  # Domyślna wartość minimalnego poziomu w przypadku błędu
 
@@ -1223,25 +1223,25 @@ class XTBClient:
 
         for attempt in range(2):  # ✅ Maksymalnie 2 próby, nie więcej
             try:
-                print(f"📡 Wysyłanie zapytania o symbol {symbol} (próba {attempt+1}/2)...")
+                logging.info(f"📡 Wysyłanie zapytania o symbol {symbol} (próba {attempt+1}/2)...")
                 self.ws.send(request_payload)
             
                 response = self.ws.recv()
                 response = json.loads(response)
 
-                print(f"🔍 Debug - pełna odpowiedź API XTB dla {symbol}: {response}")  # 🔥 Debug API
+                logging.info(f"🔍 Debug - pełna odpowiedź API XTB dla {symbol}: {response}")  # 🔥 Debug API
 
                 if response.get("status") and "returnData" in response and response["returnData"]:
                     return response["returnData"]
 
-                print(f"⚠️ API zwróciło pustą odpowiedź dla {symbol}. Spróbuję ponownie..." if attempt == 0 else "❌ API nadal zwraca pustą odpowiedź.")
+                logging.info(f"⚠️ API zwróciło pustą odpowiedź dla {symbol}. Spróbuję ponownie..." if attempt == 0 else "❌ API nadal zwraca pustą odpowiedź.")
                 time.sleep(1)  # Mała pauza przed kolejną próbą
 
             except Exception as e:
-                print(f"❌ Błąd podczas pobierania informacji o symbolu {symbol}: {e}")
+                logging.info(f"❌ Błąd podczas pobierania informacji o symbolu {symbol}: {e}")
                 time.sleep(2)  # Krótka pauza przed drugą próbą
 
-        print(f"❌ Nie udało się pobrać danych dla {symbol}.")
+        logging.info(f"❌ Nie udało się pobrać danych dla {symbol}.")
         return {}
 
 
@@ -1264,10 +1264,10 @@ class XTBClient:
         symbol_info = self.get_symbol_info(symbol)
     
         if not symbol_info:
-            print(f"❌ Nie udało się pobrać informacji o symbolu {symbol}. Anulowanie transakcji.")
+            logging.info(f"❌ Nie udało się pobrać informacji o symbolu {symbol}. Anulowanie transakcji.")
             return False
 
-        print(f"🔍 Debug - dane symbolu {symbol}: {symbol_info}")
+        logging.info(f"🔍 Debug - dane symbolu {symbol}: {symbol_info}")
 
         digits = symbol_info.get("digits", 2)
         min_distance = max(symbol_info.get("stopsLevel", 0) * (10 ** -digits), 0.001 * symbol_info.get("ask", 1))
@@ -1277,11 +1277,11 @@ class XTBClient:
 
         # ✅ Sprawdzenie czy API zwróciło poprawne ceny
         if ask == 0 or bid == 0:
-            print(f"❌ Brak poprawnych cen dla {symbol}. Pomijam transakcję.")
+            logging.info(f"❌ Brak poprawnych cen dla {symbol}. Pomijam transakcję.")
             return False
 
         entry_price = ask if trade_type == "buy" else bid
-        print(f"🔍 Entry Price dla {symbol}: {entry_price} | Trade Type: {trade_type}")
+        logging.info(f"🔍 Entry Price dla {symbol}: {entry_price} | Trade Type: {trade_type}")
 
         # ✅ Pobranie minimalnego wolumenu
         min_volume, step_lot_size, max_volume = self.get_minimum_volume(symbol)
@@ -1289,11 +1289,11 @@ class XTBClient:
 
         # ✅ Walidacja wolumenu
         if volume is None or volume == 0:
-            print(f"❌ Wolumen transakcji wynosi 0. Pomijam.")
+            logging.info(f"❌ Wolumen transakcji wynosi 0. Pomijam.")
             return False
 
         volume = max(min(volume, max_volume), min_volume)
-        print(f"🔍 Finalny wolumen dla {symbol}: {volume}")
+        logging.info(f"🔍 Finalny wolumen dla {symbol}: {volume}")
 
         # ✅ Sprawdzamy poprawność SL i TP
         stop_loss = self.validate_price_step(stop_loss, price_step) if stop_loss is not None else None
@@ -1301,13 +1301,13 @@ class XTBClient:
 
         # ✅ Zapobiegamy ustawieniu SL/TP na cenę wejścia lub za blisko ceny wejścia
         if stop_loss is not None and abs(stop_loss - entry_price) < min_distance:
-            print(f"⚠️ Stop Loss ({stop_loss}) za blisko ceny wejścia. Usuwam SL.")
+            logging.info(f"⚠️ Stop Loss ({stop_loss}) za blisko ceny wejścia. Usuwam SL.")
             stop_loss = None
         if take_profit is not None and abs(take_profit - entry_price) < min_distance:
-            print(f"⚠️ Take Profit ({take_profit}) za blisko ceny wejścia. Usuwam TP.")
+            logging.info(f"⚠️ Take Profit ({take_profit}) za blisko ceny wejścia. Usuwam TP.")
             take_profit = None
 
-        print(f"🎯 SL: {stop_loss}, TP: {take_profit}, Minimalna odległość: {min_distance}")
+        logging.info(f"🎯 SL: {stop_loss}, TP: {take_profit}, Minimalna odległość: {min_distance}")
 
         trade_info = {
             "symbol": symbol,
@@ -1324,55 +1324,55 @@ class XTBClient:
             trade_info["tp"] = round(take_profit, digits)
 
         request_payload = json.dumps({"command": "tradeTransaction", "arguments": {"tradeTransInfo": trade_info}})
-        print(f"📩 Payload zlecenia: {request_payload}")
+        logging.info(f"📩 Payload zlecenia: {request_payload}")
 
         for attempt in range(1, retries + 1):
             try:
                 # ✅ Sprawdzenie połączenia WebSocket
                 if not self.is_connection_active():
-                    print(f"⚠️ WebSocket rozłączony. Ponawiam połączenie... (Próba {attempt}/{retries})")
+                    logging.info(f"⚠️ WebSocket rozłączony. Ponawiam połączenie... (Próba {attempt}/{retries})")
                     self.reconnect()
                     self.ensure_connection()
 
-                print(f"📤 Wysyłam zlecenie do API XTB... (Próba {attempt}/{retries})")
+                logging.info(f"📤 Wysyłam zlecenie do API XTB... (Próba {attempt}/{retries})")
                 self.ws.send(request_payload)
                 response = json.loads(self.ws.recv())
 
-                print(f"🔍 Debug - pełna odpowiedź API XTB: {response}")
+                logging.info(f"🔍 Debug - pełna odpowiedź API XTB: {response}")
 
                 # ✅ Obsługa odpowiedzi API
                 if response.get("status") and response.get("returnData"):
                     order_data = response.get("returnData")
                     if order_data is None or "order" not in order_data:
-                        print(f"⚠️ API zwróciło pustą odpowiedź dla {symbol}.")
+                        logging.info(f"⚠️ API zwróciło pustą odpowiedź dla {symbol}.")
                         self.log_trade_decision("OPEN", symbol, None, entry_price, stop_loss, take_profit, volume, status="ERROR - Empty returnData")
                         return False
 
                     order_id = order_data["order"]
-                    print(f"✅ Zlecenie otwarte dla {symbol}. ID zamówienia: {order_id}")
+                    logging.info(f"✅ Zlecenie otwarte dla {symbol}. ID zamówienia: {order_id}")
 
                     # ✅ Logowanie transakcji
                     self.log_trade_decision("OPEN", symbol, order_id, entry_price, stop_loss, take_profit, volume, status="SUCCESS")
 
                     # ✅ Sprawdzenie czy SL/TP zostało ustawione
                     if "sl" not in trade_info or "tp" not in trade_info:
-                        print("⚠️ Brak SL lub TP w pierwotnym zleceniu. Próbuję ustawić je osobno.")
+                        logging.info("⚠️ Brak SL lub TP w pierwotnym zleceniu. Próbuję ustawić je osobno.")
                         self.set_sl_tp(order_id, stop_loss, take_profit)
                     return True
 
                 # 🛑 **Jeśli API zwróciło błąd**
                 error_message = response.get('errorDescr', 'Nieznany błąd')
-                print(f"❌ API zwróciło błąd dla {symbol}: {error_message}")
+                logging.info(f"❌ API zwróciło błąd dla {symbol}: {error_message}")
                 self.log_trade_decision("OPEN", symbol, None, entry_price, stop_loss, take_profit, volume, status=f"ERROR - {error_message}")
 
             except Exception as e:
-                print(f"❌ Błąd otwierania pozycji dla {symbol}: {e}")
+                logging.info(f"❌ Błąd otwierania pozycji dla {symbol}: {e}")
                 self.log_trade_decision("OPEN", symbol, None, entry_price, stop_loss, take_profit, volume, status=f"EXCEPTION - {e}")
                 return False
 
             time.sleep(attempt * 2)  # Opóźnienie dla ponownej próby
 
-        print(f"❌ Nie udało się otworzyć pozycji dla {symbol} po {retries} próbach.")
+        logging.info(f"❌ Nie udało się otworzyć pozycji dla {symbol} po {retries} próbach.")
         return False
 
 
@@ -1401,11 +1401,11 @@ class XTBClient:
             self.ws.send(json.dumps(modify_payload))
             response = json.loads(self.ws.recv())
             if response.get("status"):
-                print(f"✅ SL/TP zmodyfikowane dla zlecenia {order_id}.")
+                logging.info(f"✅ SL/TP zmodyfikowane dla zlecenia {order_id}.")
             else:
-                print(f"❌ Błąd modyfikacji SL/TP dla zlecenia {order_id}: {response['errorDescr']}")
+                logging.info(f"❌ Błąd modyfikacji SL/TP dla zlecenia {order_id}: {response['errorDescr']}")
         except Exception as e:
-            print(f"❌ Błąd podczas modyfikacji SL/TP dla zlecenia {order_id}: {e}")
+            logging.info(f"❌ Błąd podczas modyfikacji SL/TP dla zlecenia {order_id}: {e}")
             
             
     def update_position_sl_tp(self, order_id, sl, tp, retry_attempts=3):
@@ -1417,24 +1417,24 @@ class XTBClient:
         # ✅ Pobranie aktualnej listy pozycji przed próbą aktualizacji
         open_positions = self.get_open_positions()
         if open_positions is None or open_positions.empty:
-            print("⚠️ Brak otwartych pozycji. Pomijam aktualizację SL/TP.")
+            logging.info("⚠️ Brak otwartych pozycji. Pomijam aktualizację SL/TP.")
             return False
 
         # ✅ Sprawdzamy, czy order_id nadal istnieje w API XTB
         if order_id not in open_positions["order"].values:
-            print(f"⚠️ Order {order_id} nie istnieje w API XTB. Pobieram pełną listę ponownie...")
+            logging.info(f"⚠️ Order {order_id} nie istnieje w API XTB. Pobieram pełną listę ponownie...")
             time.sleep(1)
             open_positions = self.get_open_positions()
             if order_id not in open_positions["order"].values:
-                print(f"❌ Order {order_id} nadal nie istnieje. Pomijam aktualizację SL/TP.")
+                logging.info(f"❌ Order {order_id} nadal nie istnieje. Pomijam aktualizację SL/TP.")
                 return False
 
         position = self.get_position_details(order_id)
         if not position:
-            print(f"⚠️ Pozycja {order_id} nie istnieje. Anulowanie aktualizacji SL/TP.")
+            logging.info(f"⚠️ Pozycja {order_id} nie istnieje. Anulowanie aktualizacji SL/TP.")
             return False
 
-        print(f"🔍 Debug pozycji {order_id}: {position}")
+        logging.info(f"🔍 Debug pozycji {order_id}: {position}")
 
         symbol = position["symbol"]
         trade_type = "buy" if position["cmd"] == 0 else "sell"
@@ -1456,7 +1456,7 @@ class XTBClient:
         sl = round(sl, digits)
         tp = round(tp, digits)
 
-        print(f"📊 Finalne wartości SL: {sl}, TP: {tp} (zaokrąglone do {digits} miejsc po przecinku)")
+        logging.info(f"📊 Finalne wartości SL: {sl}, TP: {tp} (zaokrąglone do {digits} miejsc po przecinku)")
 
         trade_info = {
             "cmd": position["cmd"],  # ✅ 0 dla BUY, 1 dla SELL
@@ -1475,25 +1475,25 @@ class XTBClient:
             "arguments": {"tradeTransInfo": trade_info}
         }
 
-        print(f"🔍 Payload aktualizacji SL/TP: {request_payload}")
+        logging.info(f"🔍 Payload aktualizacji SL/TP: {request_payload}")
 
         for attempt in range(1, retry_attempts + 1):
             try:
                 self.ws.send(json.dumps(request_payload))
                 response = json.loads(self.ws.recv())
 
-                print(f"🔍 Debug response (update SL/TP): {response}")
+                logging.info(f"🔍 Debug response (update SL/TP): {response}")
 
                 if response.get("status", False):
-                    print(f"✅ SL/TP dla {order_id} został zaktualizowany: SL={sl}, TP={tp}")
+                    logging.info(f"✅ SL/TP dla {order_id} został zaktualizowany: SL={sl}, TP={tp}")
                     return True
 
-                print(f"❌ Błąd aktualizacji SL/TP: {response}")
+                logging.info(f"❌ Błąd aktualizacji SL/TP: {response}")
                 time.sleep(2)
             except Exception as e:
-                print(f"❌ Błąd podczas aktualizacji SL/TP dla {order_id}: {e}")
+                logging.info(f"❌ Błąd podczas aktualizacji SL/TP dla {order_id}: {e}")
 
-        print(f"⚠️ Nie udało się zaktualizować SL/TP dla {order_id} po {retry_attempts} próbach.")
+        logging.info(f"⚠️ Nie udało się zaktualizować SL/TP dla {order_id} po {retry_attempts} próbach.")
         return False
 
 
